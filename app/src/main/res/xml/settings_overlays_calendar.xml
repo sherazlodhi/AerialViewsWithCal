@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        app:title="@string/category_calendar"
+        app:key="category_calendar">
+
+        <SwitchPreferenceCompat
+            app:key="calendar_enabled"
+            app:title="@string/calendar_enabled_title"
+            app:summary="@string/calendar_enabled_summary"
+            app:defaultValue="false" />
+
+        <ListPreference
+            app:key="calendar_source"
+            app:title="Data Source"
+            app:summary="Where to fetch calendar events from"
+            app:entries="@array/calendar_source_entries"
+            app:entryValues="@array/calendar_source_values"
+            app:defaultValue="SYSTEM"
+            app:dependency="calendar_enabled" />
+
+        <EditTextPreference
+            app:key="calendar_ical_url"
+            app:title="iCal URL (.ics)"
+            app:summary="Direct URL to your .ics calendar file"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="calendar_enabled" />
+
+        <SwitchPreferenceCompat
+            app:key="calendar_as_slide"
+            app:title="Show as Slide"
+            app:summary="Include the calendar in the media rotation (like a photo)"
+            app:defaultValue="false"
+            app:dependency="calendar_enabled" />
+
+        <SeekBarPreference
+            app:key="calendar_slide_frequency"
+            app:title="Slide Frequency"
+            app:summary="How many media items between calendar slides"
+            app:defaultValue="20"
+            app:min="5"
+            android:max="100"
+            app:showSeekBarValue="true"
+            app:dependency="calendar_as_slide" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/category_typography"
+        app:key="category_typography"
+        app:dependency="calendar_enabled">
+
+        <ListPreference
+            app:defaultValue="@string/text_size_default"
+            app:entries="@array/text_size_entries"
+            app:entryValues="@array/text_size_values"
+            app:key="calendar_size"
+            app:title="@string/appearance_clock_size_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:defaultValue="@string/text_weight_default"
+            app:entries="@array/text_weight_entries"
+            app:entryValues="@array/text_weight_values"
+            app:key="calendar_weight"
+            app:title="@string/text_weight_title"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/category_calendar_info">
+        <Preference
+            app:title="@string/calendar_info_title"
+            app:summary="@string/calendar_info_summary"
+            app:selectable="false" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

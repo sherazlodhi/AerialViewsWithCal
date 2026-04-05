@@ -28,12 +28,14 @@ import com.neilturner.aerialviews.models.videos.AerialMedia
 import com.neilturner.aerialviews.services.KtorServer
 import com.neilturner.aerialviews.services.MediaService
 import com.neilturner.aerialviews.services.NowPlayingService
+import com.neilturner.aerialviews.services.CalendarService
 import com.neilturner.aerialviews.services.weather.WeatherService
 import com.neilturner.aerialviews.ui.core.ImagePlayerView.OnImagePlayerEventListener
 import com.neilturner.aerialviews.ui.core.VideoPlayerView.OnVideoPlayerEventListener
 import com.neilturner.aerialviews.ui.overlays.MessageOverlay
 import com.neilturner.aerialviews.ui.overlays.MetadataOverlay
 import com.neilturner.aerialviews.ui.overlays.NowPlayingOverlay
+import com.neilturner.aerialviews.ui.overlays.CalendarOverlay
 import com.neilturner.aerialviews.ui.overlays.ProgressBar
 import com.neilturner.aerialviews.ui.overlays.ProgressBarEvent
 import com.neilturner.aerialviews.ui.overlays.ProgressState
@@ -73,6 +75,7 @@ class ScreenController(
 
     private var nowPlayingService: NowPlayingService? = null
     private var weatherService: WeatherService? = null
+    private var calendarService: CalendarService? = null
     private var ktorServer: KtorServer? = null
     private val overlayStateStore = OverlayStateStore()
     private val overlayEventBridge = OverlayEventBridge(overlayStateStore)
@@ -263,6 +266,11 @@ class ScreenController(
                         )
                     }
             }
+
+            // Setup calendar service
+            if (overlayHelper.findOverlay<CalendarOverlay>().isNotEmpty() || GeneralPrefs.calendarAsSlide) {
+                calendarService = CalendarService(context).apply { startUpdates() }
+            }
         }
         // 1. Load playlist
         // 2. load video, setup location/POI, start playback call
@@ -340,6 +348,25 @@ class ScreenController(
             imagePlayer.setImage(media)
             imageViewBinding.root.visibility = View.VISIBLE
             videoViewBinding.root.visibility = View.INVISIBLE
+            overlayViewBinding.calendarSlide.visibility = View.GONE
+        }
+
+        // Calendar Slide
+        if (media.type == AerialMediaType.CALENDAR) {
+            calendarService?.refreshNow()
+            overlayViewBinding.calendarSlide.visibility = View.VISIBLE
+            videoViewBinding.root.visibility = View.INVISIBLE
+            imageViewBinding.root.visibility = View.INVISIBLE
+            
+            mainScope.launch {
+                fadeInNextItem()
+                delay(GeneralPrefs.slideshowSpeed.toLong() * 1000L)
+                if (currentMedia?.type == AerialMediaType.CALENDAR) {
+                    fadeOutCurrentItem()
+                }
+            }
+        } else if (media.type != AerialMediaType.CALENDAR) {
+            overlayViewBinding.calendarSlide.visibility = View.GONE
         }
 
         // Best to rest progress bar (if enabled) before media playback
@@ -347,7 +374,9 @@ class ScreenController(
             GlobalBus.post(ProgressBarEvent(ProgressState.RESET))
         }
 
-        videoPlayer.start()
+        if (media.type == AerialMediaType.VIDEO) {
+            videoPlayer.start()
+        }
     }
 
     private fun fadeOutLoadingText() {
@@ -451,6 +480,8 @@ class ScreenController(
 
                 imageViewBinding.root.visibility = View.INVISIBLE
                 imageViewBinding.imagePlayer.stop()
+
+                overlayViewBinding.calendarSlide.visibility = View.GONE
 
                 // Reset pause state when transitioning between items
                 isPaused = false
@@ -579,6 +610,7 @@ class ScreenController(
         ktorServer?.stop()
         nowPlayingService?.stop()
         weatherService?.stop()
+        calendarService?.stop()
         sleepTimerJob?.cancel()
         metadataJobs.values.forEach { it.cancel() }
         metadataJobs.clear()
@@ -911,6 +943,13 @@ class ScreenController(
         overlayHelper.findOverlay<MessageOverlay>().forEach { overlay ->
             overlay.render(state.message[overlay.type] ?: MessageOverlayState())
         }
+
+        overlayHelper.findOverlay<CalendarOverlay>().forEach {
+            it.isFullSlide = false
+            it.render(state.calendar)
+        }
+        overlayViewBinding.calendarSlide.isFullSlide = true
+        overlayViewBinding.calendarSlide.render(state.calendar)
 
         progressBarView.render(state.progress)
     }

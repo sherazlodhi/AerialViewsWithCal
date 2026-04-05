@@ -75,4 +75,7 @@ object PermissionHelper {
         NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
 
     fun hasSystemOverlayPermission(context: Context): Boolean = Settings.canDrawOverlays(context)
+
+    fun hasCalendarPermission(context: Context): Boolean =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
 }

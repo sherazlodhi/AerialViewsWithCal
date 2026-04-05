@@ -73,6 +73,8 @@
     <string name="category_playlist">Playlist</string>
     <string name="category_message">Message</string>
     <string name="category_countdown">Countdown</string>
+    <string name="category_calendar">Calendar</string>
+    <string name="category_calendar_info">Permission</string>
     <string name="category_typography">Typography</string>
     <string name="category_music">Music</string>
     <string name="category_feeds">Feeds</string>
@@ -441,6 +443,14 @@
 
     <string name="appearance_countdown_title">Countdown</string>
     <string name="appearance_countdown_summary">Show a countdown to a specific time</string>
+
+    <string name="appearance_calendar_title">Calendar</string>
+    <string name="appearance_calendar_summary">Display an upcoming events list and monthly calendar</string>
+
+    <string name="calendar_enabled_title">Enable calendar overlay</string>
+    <string name="calendar_enabled_summary">Show a beautiful monthly calendar with upcoming events over the screensaver</string>
+    <string name="calendar_info_title">Calendar Permission</string>
+    <string name="calendar_info_summary">Grant the READ_CALENDAR permission to this app in Android Settings → Apps → Aerial Views → Permissions → Calendar to allow reading events from your calendar.</string>
 
     <!-- Main / Settings / Overlays / Rows -->
     <string name="appearance_slot1_title">Lower Slot</string>

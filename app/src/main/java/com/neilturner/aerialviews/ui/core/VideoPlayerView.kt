@@ -10,6 +10,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.AspectRatioFrameLayout
 import com.neilturner.aerialviews.R
 import com.neilturner.aerialviews.models.enums.AerialMediaSource
 import com.neilturner.aerialviews.models.enums.ProgressBarLocation
@@ -211,6 +212,21 @@ class VideoPlayerView
 
         val currentPosition
             get() = exoPlayer.currentPosition.toInt()
+
+        override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+            super.onVideoSizeChanged(videoSize)
+            Timber.i("Video size detected: ${videoSize.width}x${videoSize.height}")
+            
+            // If the video is vertical (height > width), we must use FIT to avoid "squishing" on TV
+            if (videoSize.height > videoSize.width) {
+                Timber.i("Vertical video detected, forcing RESIZE_MODE_FIT")
+                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+            } else {
+                // Otherwise restore user setting
+                resizeMode = VideoPlayerHelper.getResizeMode(GeneralPrefs.videoScale)
+            }
+            requestLayout()
+        }
 
         @OptIn(UnstableApi::class)
         override fun onPlaybackStateChanged(playbackState: Int) {

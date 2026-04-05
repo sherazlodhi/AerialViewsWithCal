@@ -58,11 +58,12 @@ class WallpaperProviderService : Service() {
                             }
 
                         // Convert AerialMedia objects to Wallpaper objects
-                        aerialMediaList.map { media ->
+                        aerialMediaList.filter { it.type != AerialMediaType.CALENDAR }.map { media ->
                             val wallpaperType =
                                 when (media.type) {
                                     AerialMediaType.VIDEO -> WallpaperType.VIDEO
                                     AerialMediaType.IMAGE -> WallpaperType.IMAGE
+                                    else -> WallpaperType.IMAGE
                                 }
                             Wallpaper(
                                 media.uri.toString(),

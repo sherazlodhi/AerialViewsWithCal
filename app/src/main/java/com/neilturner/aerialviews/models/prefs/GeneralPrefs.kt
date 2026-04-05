@@ -144,6 +144,16 @@ object GeneralPrefs : KotprefModel() {
     var countdownSize by stringPref("18", "countdown_size")
     var countdownWeight by stringPref("300", "countdown_weight")
 
+    // Calendar
+    var calendarEnabled by booleanPref(false, "calendar_enabled")
+    var calendarSize by stringPref("18", "calendar_size")
+    var calendarWeight by stringPref("REGULAR", "calendar_weight")
+
+    var calendarSource by stringPref("SYSTEM", "calendar_source")
+    var calendarIcalUrl by stringPref("", "calendar_ical_url")
+    var calendarAsSlide by booleanPref(false, "calendar_as_slide")
+    var calendarSlideFrequency by intPref(20, "calendar_slide_frequency")
+
     // Other
     var alternateTextPosition by booleanPref(true, "alt_text_position")
 

@@ -18,6 +18,7 @@ import com.neilturner.aerialviews.models.prefs.SambaMediaPrefs
 import com.neilturner.aerialviews.models.prefs.SambaMediaPrefs2
 import com.neilturner.aerialviews.models.prefs.WebDavMediaPrefs
 import com.neilturner.aerialviews.models.prefs.WebDavMediaPrefs2
+import com.neilturner.aerialviews.models.videos.AerialMedia
 import com.neilturner.aerialviews.providers.AmazonMediaProvider
 import com.neilturner.aerialviews.providers.AppleMediaProvider
 import com.neilturner.aerialviews.providers.Comm1MediaProvider
@@ -152,6 +153,24 @@ class MediaService(
             if (GeneralPrefs.shuffleVideos) {
                 filteredMedia = filteredMedia.shuffled()
                 Timber.i("Shuffling media items")
+            }
+
+            if (GeneralPrefs.calendarAsSlide && GeneralPrefs.calendarEnabled) {
+                val cycle = GeneralPrefs.calendarSlideFrequency.coerceAtLeast(1)
+                val newList = mutableListOf<AerialMedia>()
+                filteredMedia.forEachIndexed { index, media ->
+                    newList.add(media)
+                    if ((index + 1) % cycle == 0) {
+                        newList.add(
+                            AerialMedia(
+                                uri = android.net.Uri.parse("calendar://view"),
+                                type = AerialMediaType.CALENDAR,
+                                source = AerialMediaSource.UNKNOWN,
+                            )
+                        )
+                    }
+                }
+                filteredMedia = newList
             }
 
             Timber.i("Total media items: ${filteredMedia.size}")

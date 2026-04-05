@@ -63,5 +63,10 @@
                     app:summary="@string/appearance_countdown_summary"
                     app:fragment="com.neilturner.aerialviews.ui.settings.OverlaysCountdownFragment"/>
 
+                <Preference
+                    app:title="@string/appearance_calendar_title"
+                    app:summary="@string/appearance_calendar_summary"
+                    app:fragment="com.neilturner.aerialviews.ui.settings.OverlaysCalendarFragment"/>
+
         </PreferenceCategory>
 </PreferenceScreen>

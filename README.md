@@ -25,6 +25,8 @@ Inspired by Apple TV's beautiful video screensaver!
 * Many playlist options to limit media length or loop certain videos
 * Use the D-Pad or swipe (on phones, tablets, etc) to skip media, skip songs, change speed, seek, pause and more
 * Refresh rate switching for 24fps, 50fps content
+* **Advanced Calendar Integration**: Direct iCal (.ics) support, full-screen 7-day dashboard slide, and "Today-only" glanceable corner overlays.
+* **Smart Video Scaling**: Automatic detection of vertical (portrait) videos from sources like Immich to prevent "squished" playback on TVs.
 
 ## Support the project
 
@@ -502,6 +504,33 @@ If you want to launch into the screensaver directly, the equivalent of selecting
 Then you must assign an "Exit to settings" action to a d-pad, button press or swipe on one of these screens:
 
 `Settings > D-Pad/Remote, Tap & Swipe Gestures > D-Pad, Button Press, etc`
+
+</details>
+
+## Calendar Integration
+
+Aerial Views now features a deep calendar integration that can be displayed as either a small corner overlay or a full-screen "Dashboard" slide in your media rotation.
+
+<details>
+<summary>Configuration</summary>
+&nbsp;
+
+1.  Open **Settings** → **Overlays** → **Calendar Overlay**
+2.  **Source**: Choose between "Android System Calendar" or "Direct iCal URL"
+3.  **iCal URL**: Provide a public `.ics` link (e.g., from Google Calendar or iCloud) for direct syncing without external app dependencies.
+4.  **Display Modes**:
+    *   **Corner Overlay**: Set to a slot (e.g., Top Right) to see a minimal, high-visibility list of today's events over your photos.
+    *   **Slide Mode**: Enable "Show as Slide" to inject a full-screen, 7-day weekly dashboard into your slideshow every N items.
+
+</details>
+
+<details>
+<summary>Smart Features</summary>
+&nbsp;
+
+*   **Dynamic UI Scaling**: The dashboard automatically adjusts font sizes to ensure all events for the week fit perfectly, even on very busy days.
+*   **Real-Time Sync**: The app performs a cache-busting fresh fetch every time the calendar slide appears.
+*   **TV-Optimized**: Designed for readability from 10 feet away, including color-coded event bars and a prominent "upcoming" header.
 
 </details>
 

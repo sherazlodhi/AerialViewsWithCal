@@ -323,6 +323,15 @@
     <string name="slot_message_3">Message #3</string>
     <string name="slot_message_4">Message #4</string>
     <string name="slot_countdown">Countdown</string>
+    <string name="slot_calendar">Calendar</string>
+    <string-array name="calendar_source_entries">
+        <item>Android System (Google/System)</item>
+        <item>Direct iCal (.ics) URL</item>
+    </string-array>
+    <string-array name="calendar_source_values">
+        <item>SYSTEM</item>
+        <item>ICAL</item>
+    </string-array>
     <string-array name="slot_entries" translatable="false">
         <item>@string/slot_empty</item>
         <item>@string/slot_clock</item>
@@ -340,6 +349,7 @@
         <item>@string/slot_message_3</item>
         <item>@string/slot_message_4</item>
         <item>@string/slot_countdown</item>
+        <item>@string/slot_calendar</item>
     </string-array>
     <string-array name="slot_values" translatable="false">
         <item>EMPTY</item>
@@ -358,6 +368,7 @@
         <item>MESSAGE3</item>
         <item>MESSAGE4</item>
         <item>COUNTDOWN</item>
+        <item>CALENDAR</item>
     </string-array>
 
     <!-- Playback speed -->

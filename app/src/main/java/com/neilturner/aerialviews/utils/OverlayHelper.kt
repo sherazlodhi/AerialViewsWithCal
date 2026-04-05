@@ -17,6 +17,7 @@ import com.neilturner.aerialviews.ui.overlays.MetadataOverlay
 import com.neilturner.aerialviews.ui.overlays.NowPlayingOverlay
 import com.neilturner.aerialviews.ui.overlays.WeatherForecastOverlay
 import com.neilturner.aerialviews.ui.overlays.WeatherCurrentOverlay
+import com.neilturner.aerialviews.ui.overlays.CalendarOverlay
 
 class OverlayHelper(
     private val context: Context,
@@ -311,6 +312,12 @@ class OverlayHelper(
                 CountdownOverlay(context).apply {
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, prefs.countdownSize.toFloat())
                     typeface = FontHelper.getTypeface(context, prefs.fontTypeface, prefs.countdownWeight)
+                    type = overlay
+                }
+            }
+
+            OverlayType.CALENDAR -> {
+                CalendarOverlay(context).apply {
                     type = overlay
                 }
             }
