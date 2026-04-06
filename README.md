@@ -26,7 +26,7 @@ Inspired by Apple TV's beautiful video screensaver!
 * Use the D-Pad or swipe (on phones, tablets, etc) to skip media, skip songs, change speed, seek, pause and more
 * Refresh rate switching for 24fps, 50fps content
 * **Advanced Calendar Integration**: Direct iCal (.ics) support, full-screen 7-day dashboard slide, and "Today-only" glanceable corner overlays.
-* **Smart Video Scaling**: Automatic detection of vertical (portrait) videos from sources like Immich to prevent "squished" playback on TVs.
+* **Smart Video & Photo Scaling**: Automatic detection of vertical (portrait) content from sources like Immich. Videos are played in "FIT" mode to prevent squishing, and photos automatically generate a beautiful blurred background to fill the screen while showing the full image.
 
 ## Support the project
 

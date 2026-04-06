@@ -56,10 +56,10 @@ class BackgroundBlurHelper(
     }
 
     /** Updates the background with a blurred copy of [drawable], or hides it if blur is disabled. */
-    fun update(drawable: Drawable?) {
+    fun update(drawable: Drawable?, forceShow: Boolean = false) {
         val token = ++backgroundJobToken
 
-        if (drawable != null && GeneralPrefs.photoBackgroundBlurEnabled) {
+        if (drawable != null && (GeneralPrefs.photoBackgroundBlurEnabled || forceShow)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val backgroundDrawable = drawable.constantState?.newDrawable()?.mutate() ?: drawable
                 backgroundImageView.setImageDrawable(backgroundDrawable)

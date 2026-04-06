@@ -181,7 +181,13 @@ class ImagePlayerView : FrameLayout {
                         },
                         onSuccess = { image ->
                             val drawable = image.asDrawable(resources)
-                            blurHelper.update(drawable)
+                            
+                            // Check for aspect ratio mismatch to determine if we should force blur background
+                            val photoAR = if (image.height > 0) image.width.toFloat() / image.height.toFloat() else 1f
+                            val screenAR = resolveScreenAspectRatio()
+                            val isMismatch = kotlin.math.abs(photoAR - screenAR) > 0.1f
+                            
+                            blurHelper.update(drawable, forceShow = isMismatch)
                             foregroundImageView.setImageDrawable(drawable)
                         },
                     ).listener(
@@ -242,6 +248,11 @@ class ImagePlayerView : FrameLayout {
         return Pair(width, height)
     }
 
+    private fun resolveScreenAspectRatio(): Float {
+        val (w, h) = resolveTargetSize()
+        return if (h > 0) w.toFloat() / h.toFloat() else 1.77f
+    }
+
     private fun handleImageError(throwable: Throwable) {
         Timber.e(throwable, "Exception while loading image: ${throwable.message}")
         FirebaseHelper.crashlyticsException(throwable)
@@ -286,13 +297,22 @@ class ImagePlayerView : FrameLayout {
         width: Int,
         height: Int,
     ) {
-        val aspect = AspectRatio.fromDimensions(width, height)
-        Timber.i("Aspect ratio: $aspect")
-        foregroundImageView.scaleType =
-            when (aspect) {
-                AspectRatio.SQUARE, AspectRatio.PORTRAIT -> getScaleType(GeneralPrefs.photoScalePortrait)
-                AspectRatio.LANDSCAPE -> getScaleType(GeneralPrefs.photoScaleLandscape)
-            }
+        val photoAR = if (height > 0) width.toFloat() / height.toFloat() else 1f
+        val screenAR = resolveScreenAspectRatio()
+        val isMismatch = kotlin.math.abs(photoAR - screenAR) > 0.1f
+
+        if (isMismatch) {
+            Timber.i("Aspect ratio mismatch (Photo: $photoAR, Screen: $screenAR), forcing FIT_CENTER")
+            foregroundImageView.scaleType = ImageView.ScaleType.FIT_CENTER
+        } else {
+            val aspect = AspectRatio.fromDimensions(width, height)
+            Timber.i("Aspect ratio matches (Photo: $photoAR, Screen: $screenAR): $aspect")
+            foregroundImageView.scaleType =
+                when (aspect) {
+                    AspectRatio.SQUARE, AspectRatio.PORTRAIT -> getScaleType(GeneralPrefs.photoScalePortrait)
+                    AspectRatio.LANDSCAPE -> getScaleType(GeneralPrefs.photoScaleLandscape)
+                }
+        }
     }
 
     private fun getScaleType(scale: PhotoScale?): ImageView.ScaleType =
