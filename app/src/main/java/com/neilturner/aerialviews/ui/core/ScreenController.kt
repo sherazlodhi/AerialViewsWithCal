@@ -61,6 +61,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.kosert.flowbus.GlobalBus
+import me.kosert.flowbus.EventsReceiver
+import me.kosert.flowbus.subscribe
+import com.neilturner.aerialviews.services.SpeechEvent
+import com.neilturner.aerialviews.services.TtsService
 import timber.log.Timber
 import kotlin.math.abs
 
@@ -77,6 +81,7 @@ class ScreenController(
     private var weatherService: WeatherService? = null
     private var calendarService: CalendarService? = null
     private var ktorServer: KtorServer? = null
+    private var ttsService: TtsService? = null
     private val overlayStateStore = OverlayStateStore()
     private val overlayEventBridge = OverlayEventBridge(overlayStateStore)
     private val metadataResolver = MetadataResolver()
@@ -98,6 +103,7 @@ class ScreenController(
     private var sleepTimerJob: Job? = null
     private val metadataJobs = mutableMapOf<OverlayType, Job>()
     private var currentMedia: AerialMedia? = null
+    private val receiver = EventsReceiver()
 
     private val videoViewBinding: VideoViewBinding
     private val imageViewBinding: ImageViewBinding
@@ -242,6 +248,12 @@ class ScreenController(
                     }.apply {
                         start()
                     }
+                
+                // Initialize TTS for #Announce# command
+                ttsService = TtsService(context)
+                receiver.subscribe<SpeechEvent> { event ->
+                    ttsService?.speak(event.text)
+                }
             }
 
             // Build playlist and start screensaver
@@ -604,10 +616,12 @@ class ScreenController(
 
     fun stop() {
         RefreshRateHelper.restoreOriginalMode(context)
+        receiver.unsubscribe()
         overlayEventBridge.stop()
         videoPlayer.release()
         imagePlayer.release()
         ktorServer?.stop()
+        ttsService?.stop()
         nowPlayingService?.stop()
         weatherService?.stop()
         calendarService?.stop()
@@ -942,6 +956,11 @@ class ScreenController(
 
         overlayHelper.findOverlay<MessageOverlay>().forEach { overlay ->
             overlay.render(state.message[overlay.type] ?: MessageOverlayState())
+        }
+        
+        overlayViewBinding.tickerOverlay.apply {
+            type = OverlayType.TICKER
+            render(state.message[OverlayType.TICKER] ?: MessageOverlayState())
         }
 
         overlayHelper.findOverlay<CalendarOverlay>().forEach {

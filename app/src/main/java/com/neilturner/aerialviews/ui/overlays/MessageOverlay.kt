@@ -46,6 +46,13 @@ class MessageOverlay : AppCompatTextView {
 
     init {
         TextViewCompat.setTextAppearance(this, R.style.OverlayText)
+        // Marquee requirements
+        ellipsize = android.text.TextUtils.TruncateAt.MARQUEE
+        marqueeRepeatLimit = -1 // Forever
+        isSingleLine = true
+        setHorizontallyScrolling(true)
+        isFocusable = true
+        isFocusableInTouchMode = true
     }
 
     override fun onAttachedToWindow() {
@@ -131,6 +138,17 @@ class MessageOverlay : AppCompatTextView {
         if (!text.isNullOrBlank() && durationSeconds != null && durationSeconds > 0) {
             clearJob =
                 mainScope.launch {
+                    val textWidth = paint.measureText(text.toString())
+                    val viewWidth = width.toFloat()
+                    
+                    if (textWidth > viewWidth && viewWidth > 0) {
+                        // It's a long message, wait for one full scroll
+                        // Average marquee speed is ~100-150 pixels per second
+                        val scrollDurationMs = ((textWidth + viewWidth) / 100f * 1000f).toLong()
+                        Timber.i("$type: Long message detected. Waiting ${scrollDurationMs}ms for first scroll before starting $durationSeconds s countdown")
+                        delay(scrollDurationMs)
+                    }
+                    
                     delay(durationSeconds * 1000L)
                     if (!text.isNullOrBlank()) {
                         Timber.i("$type: Auto-clearing message after $durationSeconds seconds")
@@ -195,9 +213,12 @@ class MessageOverlay : AppCompatTextView {
         if (message.isNotEmpty()) {
             Timber.i("$type: Set new message: '$message'")
             text = message
+            isSelected = true // Required for marquee
+            requestFocus() // Explicitly request focus to trigger marquee
         } else {
             Timber.i("$type: Clearing message")
             text = null
+            isSelected = false
         }
     }
 

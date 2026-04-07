@@ -24,8 +24,22 @@
 
         <EditTextPreference
             app:key="calendar_ical_url"
-            app:title="iCal URL (.ics)"
+            app:title="iCal URL (Legacy)"
             app:summary="Direct URL to your .ics calendar file"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="calendar_enabled" />
+
+        <EditTextPreference
+            app:key="calendar_ical_urls"
+            app:title="iCal URLs (Multiple)"
+            app:summary="Semicolon separated URLs for multiple calendars"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="calendar_enabled" />
+
+        <EditTextPreference
+            app:key="calendar_ical_colors"
+            app:title="iCal Colors"
+            app:summary="Semicolon separated HEX colors (e.g. #4A90E2;#FF0000)"
             app:useSimpleSummaryProvider="true"
             app:dependency="calendar_enabled" />
 
@@ -45,6 +59,29 @@
             android:max="100"
             app:showSeekBarValue="true"
             app:dependency="calendar_as_slide" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="Voice Announcements"
+        app:key="category_announcements"
+        app:dependency="calendar_enabled">
+
+        <SwitchPreferenceCompat
+            app:key="calendar_announcements_enabled"
+            app:title="Voice Announcements"
+            app:summary="Verbally announce upcoming events before they start"
+            app:defaultValue="false" />
+
+        <SeekBarPreference
+            app:key="calendar_announcement_minutes"
+            app:title="Announcement Lead Time"
+            app:summary="How many minutes before the event to announce"
+            app:defaultValue="5"
+            app:min="1"
+            android:max="60"
+            app:showSeekBarValue="true"
+            app:dependency="calendar_announcements_enabled" />
 
     </PreferenceCategory>
 

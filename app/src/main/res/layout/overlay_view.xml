@@ -82,32 +82,47 @@
 
         <androidx.constraintlayout.helper.widget.Flow
             android:id="@+id/flowBottomLeft"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/screen_border_padding"
-            android:layout_marginBottom="@dimen/screen_border_padding_bottom"
+            android:layout_marginBottom="@dimen/text_block_padding"
             android:orientation="vertical"
             app:flow_horizontalAlign="start"
             app:flow_verticalAlign="bottom"
             app:flow_verticalGap="@dimen/text_block_padding"
             app:flow_verticalStyle="packed"
             app:flow_wrapMode="none"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/tickerOverlay"
             app:layout_constraintStart_toStartOf="parent" />
 
         <androidx.constraintlayout.helper.widget.Flow
             android:id="@+id/flowBottomRight"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/screen_border_padding"
-            android:layout_marginBottom="@dimen/screen_border_padding_bottom"
+            android:layout_marginBottom="@dimen/text_block_padding"
             android:orientation="vertical"
             app:flow_horizontalAlign="end"
             app:flow_verticalAlign="bottom"
             app:flow_verticalGap="@dimen/text_block_padding"
             app:flow_verticalStyle="packed"
             app:flow_wrapMode="none"
+            app:layout_constraintBottom_toTopOf="@+id/tickerOverlay"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <com.neilturner.aerialviews.ui.overlays.MessageOverlay
+            android:id="@+id/tickerOverlay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:background="#99000000"
+            android:gravity="center_vertical"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
         <com.neilturner.aerialviews.ui.overlays.CalendarOverlay

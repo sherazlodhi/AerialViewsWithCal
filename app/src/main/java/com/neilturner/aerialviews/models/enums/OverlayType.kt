@@ -18,4 +18,5 @@ enum class OverlayType {
     MESSAGE4,
     COUNTDOWN,
     CALENDAR,
+    TICKER,
 }

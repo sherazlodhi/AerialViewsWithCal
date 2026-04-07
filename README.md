@@ -25,7 +25,8 @@ Inspired by Apple TV's beautiful video screensaver!
 * Many playlist options to limit media length or loop certain videos
 * Use the D-Pad or swipe (on phones, tablets, etc) to skip media, skip songs, change speed, seek, pause and more
 * Refresh rate switching for 24fps, 50fps content
-* **Advanced Calendar Integration**: Direct iCal (.ics) support, full-screen 7-day dashboard slide, and "Today-only" glanceable corner overlays.
+* **Advanced Calendar Integration**: Support for multiple iCal (.ics) feeds with custom color coding, full-screen 7-day dashboard slide, and "Today-only" corner overlays.
+* **Proactive Voice Announcements**: Integrated Text-to-Speech (TTS) engine that verbally announces upcoming calendar events before they start.
 * **Smart Video & Photo Scaling**: Automatic detection of vertical (portrait) content from sources like Immich. Videos are played in "FIT" mode to prevent squishing, and photos automatically generate a beautiful blurred background to fill the screen while showing the full image.
 
 ## Support the project
@@ -517,8 +518,10 @@ Aerial Views now features a deep calendar integration that can be displayed as e
 
 1.  Open **Settings** → **Overlays** → **Calendar Overlay**
 2.  **Source**: Choose between "Android System Calendar" or "Direct iCal URL"
-3.  **iCal URL**: Provide a public `.ics` link (e.g., from Google Calendar or iCloud) for direct syncing without external app dependencies.
-4.  **Display Modes**:
+3.  **iCal URLs**: Provide multiple public `.ics` links separated by semicolons (e.g., `url1;url2`) for unified multi-feed syncing.
+4.  **iCal Colors**: Assign custom HEX colors (e.g., `#00FF00;#FF0000`) to your feeds for visual distinction.
+5.  **Voice Announcements**: Enable verbal alerts to have your TV announce upcoming events N minutes before they begin.
+6.  **Display Modes**:
     *   **Corner Overlay**: Set to a slot (e.g., Top Right) to see a minimal, high-visibility list of today's events over your photos.
     *   **Slide Mode**: Enable "Show as Slide" to inject a full-screen, 7-day weekly dashboard into your slideshow every N items.
 
@@ -586,7 +589,8 @@ curl -X POST http://<tv-ip-address>:8081/message/1 \
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `text` | string | Yes | The message text to display (empty string clears the message) |
-| `duration` | integer | No | Auto-clear message after N seconds |
+| `duration` | integer | No | Auto-clear message after N seconds. For scrolling messages, this timer starts AFTER the first full scroll. |
+| `append` | boolean | No | If `true`, the text will be appended to the current message (separated by a dot) instead of replacing it. |
 | `textSize` | integer | No | Font size in sp (default: 18) |
 | `textWeight` | integer | No | Font weight 100-900 (default: 300) |
 
@@ -605,6 +609,18 @@ curl -X POST http://<tv-ip-address>:8081/message/1 \
   "error": "Invalid textSize value: 50. Valid values are: [12, 14, 16, 18, 20, 22, 24]"
 }
 ```
+
+#### Special Commands (Instruction Tokens)
+
+You can include special tags in your message text to trigger advanced functionality. These tags are automatically hidden from the visual display.
+
+| Command | Description |
+|-----------|-------------|
+| `#AllClear#` | Instantly clears all existing messages in the buffer for this overlay. Great for resetting a news ticker. |
+| `#Announce#` | Triggers a verbal announcement of the **entire current message buffer**. The TV will read out the scrolling text using the native TTS engine. |
+
+**Example:**
+`{"text": "#AllClear# #Announce# Attention: Front door is open!", "ticker": true}` -> Clears the ticker and verbally announces the alert.
 
 #### Clear a Message
 

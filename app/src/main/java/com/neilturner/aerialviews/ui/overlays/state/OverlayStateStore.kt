@@ -43,8 +43,38 @@ class OverlayStateStore {
         type: OverlayType,
         state: MessageOverlayState,
     ) {
+        val rawText = state.text ?: ""
+        val shouldAnnounce = rawText.contains("#Announce#", ignoreCase = true)
+
+        // Command: #AllClear# - Purge all messages for this type
+        if (rawText.contains("#AllClear#", ignoreCase = true)) {
+            _uiState.update {
+                it.copy(message = it.message.toMutableMap().apply { remove(type) })
+            }
+            return
+        }
+
+        // Clean up text
+        val processedText = rawText.replace("#Announce#", "", ignoreCase = true).trim()
+
         _uiState.update {
-            it.copy(message = it.message.toMutableMap().apply { put(type, state) })
+            val existing = it.message[type]
+            val newState = if (state.append && existing != null) {
+                // If appending, combine text with a bullet separator
+                state.copy(text = existing.text + " • " + processedText)
+            } else {
+                state.copy(text = processedText)
+            }
+
+            // High-priority: Verbalize the ENTIRE current ticker content
+            if (shouldAnnounce) {
+                val fullSpeechText = newState.text.replace("•", " ").trim()
+                if (fullSpeechText.isNotEmpty()) {
+                    me.kosert.flowbus.GlobalBus.post(com.neilturner.aerialviews.services.SpeechEvent(fullSpeechText))
+                }
+            }
+
+            it.copy(message = it.message.toMutableMap().apply { put(type, newState) })
         }
     }
 

@@ -1,7 +1,9 @@
 package com.neilturner.aerialviews.services
 
 import android.content.Context
+import android.graphics.Color
 import android.provider.CalendarContract
+import android.speech.tts.TextToSpeech
 import com.neilturner.aerialviews.models.prefs.GeneralPrefs
 import com.neilturner.aerialviews.utils.PermissionHelper
 import kotlinx.coroutines.CoroutineScope
@@ -19,9 +21,29 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
 
-class CalendarService(private val context: Context) {
+class CalendarService(private val context: Context) : TextToSpeech.OnInitListener {
     private val scope = CoroutineScope(Dispatchers.IO)
     private var updateJob: Job? = null
+    private var announcementJob: Job? = null
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
+    
+    private var cachedEvents: List<CalendarEvent> = emptyList()
+    private val announcedEventIds = mutableSetOf<String>()
+
+    init {
+        tts = TextToSpeech(context, this)
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            ttsReady = true
+            tts?.language = Locale.getDefault()
+            Timber.i("CalendarService: TTS initialized successfully")
+        } else {
+            Timber.e("CalendarService: TTS initialization failed")
+        }
+    }
 
     fun startUpdates() {
         updateJob?.cancel()
@@ -31,10 +53,26 @@ class CalendarService(private val context: Context) {
                 delay(UPDATE_INTERVAL_MS)
             }
         }
+        
+        startAnnouncementWatcher()
+    }
+
+    private fun startAnnouncementWatcher() {
+        announcementJob?.cancel()
+        announcementJob = scope.launch {
+            while (true) {
+                if (GeneralPrefs.calendarAnnouncementsEnabled) {
+                    checkAnnouncements()
+                }
+                delay(60 * 1000L) // Check every minute
+            }
+        }
     }
 
     fun stop() {
         scope.cancel()
+        tts?.stop()
+        tts?.shutdown()
     }
 
     fun refreshNow() {
@@ -43,8 +81,18 @@ class CalendarService(private val context: Context) {
     }
 
     private fun fetchAndPostEvents() {
-        val events = if (GeneralPrefs.calendarSource == "ICAL" && GeneralPrefs.calendarIcalUrl.isNotEmpty()) {
-            fetchIcalEvents(GeneralPrefs.calendarIcalUrl)
+        val events = if (GeneralPrefs.calendarSource == "ICAL") {
+            val rawUrls = if (GeneralPrefs.calendarIcalUrls.isNotEmpty()) GeneralPrefs.calendarIcalUrls else GeneralPrefs.calendarIcalUrl
+            val urls = rawUrls.split(";").filter { it.isNotBlank() }
+            val hexColors = GeneralPrefs.calendarIcalColors.split(";").filter { it.isNotBlank() }
+            
+            val allEvents = mutableListOf<CalendarEvent>()
+            urls.forEachIndexed { i, url ->
+                val colorStr = hexColors.getOrNull(i)
+                val colorInt = parseColorSafely(colorStr)
+                allEvents.addAll(fetchIcalEvents(url, colorInt))
+            }
+            allEvents.sortedBy { it.startTime }
         } else {
             if (!hasCalendarPermission()) {
                 Timber.w("CalendarService: READ_CALENDAR permission not granted")
@@ -53,33 +101,83 @@ class CalendarService(private val context: Context) {
                 queryUpcomingEvents()
             }
         }
-        Timber.d("CalendarService: fetched ${events.size} events")
+        Timber.i("CalendarService: fetched ${events.size} total events")
+        cachedEvents = events
         GlobalBus.post(CalendarDataEvent(events))
     }
 
-    private fun fetchIcalEvents(url: String): List<CalendarEvent> {
+    private fun checkAnnouncements() {
+        if (!ttsReady) return
+        
+        val now = System.currentTimeMillis()
+        val minutesBefore = GeneralPrefs.calendarAnnouncementMinutes
+        val targetTime = now + minutesBefore * 60 * 1000L
+        
+        // Find events starting in the target window
+        // This ensures the 1-minute loop catches it
+        val upcoming = cachedEvents.filter { 
+            !it.isAllDay && 
+            it.startTime > now && 
+            it.startTime <= targetTime + 60 * 1000L && // started within 1 minute of target
+            it.startTime >= targetTime - 60 * 1000L
+        }
+
+        upcoming.forEach { event ->
+            val eventKey = "announce_${event.startTime}_${event.title}"
+            if (!announcedEventIds.contains(eventKey)) {
+                announceEvent(event)
+                announcedEventIds.add(eventKey)
+            }
+        }
+        
+        // Clean up old IDs once a day or periodically
+        if (announcedEventIds.size > 100) {
+            val recentlyannounced = announcedEventIds.filter { it.substringAfter("announce_").substringBefore("_").toLongOrNull() ?: 0L > now - 24 * 60 * 60 * 1000L }
+            announcedEventIds.clear()
+            announcedEventIds.addAll(recentlyannounced)
+        }
+    }
+
+    private fun announceEvent(event: CalendarEvent) {
+        val minutesBefore = GeneralPrefs.calendarAnnouncementMinutes
+        val text = "Next event, ${event.title}, starts in $minutesBefore minutes"
+        Timber.i("CalendarService: Announcing: $text")
+        tts?.speak(text, TextToSpeech.QUEUE_ADD, null, "announcement_${event.startTime}")
+    }
+
+    private fun parseColorSafely(hex: String?): Int {
+        if (hex == null) return 0
+        return try {
+            val h = if (!hex.startsWith("#")) "#$hex" else hex
+            Color.parseColor(h)
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    private fun fetchIcalEvents(url: String, color: Int): List<CalendarEvent> {
         return try {
             val client = OkHttpClient()
             val request = Request.Builder()
-                .url(url)
+                .url(url.trim())
                 .addHeader("Cache-Control", "no-cache")
                 .addHeader("Pragma", "no-cache")
                 .build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    Timber.e("CalendarService: failed to fetch iCal: ${response.code}")
+                    Timber.e("CalendarService: failed to fetch iCal ($url): ${response.code}")
                     return emptyList()
                 }
                 val body = response.body.string()
-                parseIcal(body)
+                parseIcal(body, color)
             }
         } catch (e: Exception) {
-            Timber.e(e, "CalendarService: error fetching iCal events")
+            Timber.e(e, "CalendarService: error fetching iCal events from $url")
             emptyList()
         }
     }
 
-    private fun parseIcal(data: String): List<CalendarEvent> {
+    private fun parseIcal(data: String, calendarColor: Int): List<CalendarEvent> {
         val events = mutableListOf<CalendarEvent>()
         val lines = data.lines().map { it.trim() }
         var currentEvent: CalendarEvent? = null
@@ -92,7 +190,7 @@ class CalendarService(private val context: Context) {
             when {
                 line.startsWith("BEGIN:VEVENT") -> {
                     inEvent = true
-                    currentEvent = CalendarEvent(0, "", 0, 0, false, 0, "")
+                    currentEvent = CalendarEvent(0, "", 0, 0, false, calendarColor, "")
                 }
                 line.startsWith("END:VEVENT") -> {
                     inEvent = false
@@ -124,7 +222,7 @@ class CalendarService(private val context: Context) {
                 }
             }
         }
-        return events.sortedBy { it.startTime }
+        return events
     }
 
     private fun parseIcalTime(value: String): Long {
@@ -217,7 +315,7 @@ class CalendarService(private val context: Context) {
 
     companion object {
         private const val UPDATE_INTERVAL_MS = 5 * 60 * 1000L // 5 minutes
-        private const val MAX_EVENTS = 50
+        private const val MAX_EVENTS = 100
     }
 }
 

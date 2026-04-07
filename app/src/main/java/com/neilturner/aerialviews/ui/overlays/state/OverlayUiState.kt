@@ -30,6 +30,7 @@ data class MessageOverlayState(
     val duration: Int? = null,
     val textSize: Int? = null,
     val textWeight: Int? = null,
+    val append: Boolean = false,
 )
 
 data class NowPlayingOverlayState(
@@ -60,4 +61,5 @@ fun MessageEvent.toState(): MessageOverlayState =
         duration = duration,
         textSize = textSize,
         textWeight = textWeight,
+        append = append,
     )

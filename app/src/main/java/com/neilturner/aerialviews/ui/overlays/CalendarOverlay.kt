@@ -60,8 +60,8 @@ class CalendarOverlay
         private val colorDivider = Color.argb(45, 255, 255, 255)
         private val colorEventLabelBg = Color.argb(160, 40, 50, 80)
 
-        private val cornerRadius = 28f
-        private val eventDotRadius = 5f
+        private val cornerRadius = 20f
+        private val eventDotRadius = 4f
 
         private val today = Calendar.getInstance()
         private val displayedMonth = Calendar.getInstance()
@@ -91,12 +91,12 @@ class CalendarOverlay
 
             val w = width.toFloat()
             val h = height.toFloat()
-            val padding = w * 0.03f
+            val padding = w * 0.02f
             
             if (isFullSlide) {
                 // Full Screen Slide: Top Panel + Weekly Grid
-                val topPanelHeight = h * 0.35f
-                canvas.drawColor(Color.argb(140, 0, 0, 0))
+                val topPanelHeight = h * 0.3f
+                canvas.drawColor(Color.argb(160, 0, 0, 0))
 
                 drawTopUpcomingEvents(
                     canvas,
@@ -191,8 +191,8 @@ class CalendarOverlay
             backgroundPaint.color = colorBg
             canvas.drawRoundRect(panelRect, cornerRadius, cornerRadius, backgroundPaint)
 
-            val titleSize = h * 0.15f
-            val padding = w * 0.02f
+            val titleSize = h * 0.12f
+            val padding = w * 0.015f
             
             upcomingTitlePaint.color = colorAccentBlue
             upcomingTitlePaint.textSize = titleSize
@@ -204,7 +204,7 @@ class CalendarOverlay
             val now = System.currentTimeMillis()
             val upcoming = events
                 .filter { (it.endTime > now || it.isAllDay) && it.startTime < now + 7L * 24 * 60 * 60 * 1000 }
-                .take(3) 
+                .take(5) 
 
             if (upcoming.isEmpty()) {
                 upcomingEventPaint.color = colorWhite40
@@ -214,8 +214,8 @@ class CalendarOverlay
                 return
             }
 
-            val cardW = (w - padding * 4) / 3f
-            val cardTop = top + titleSize * 2.2f
+            val cardW = (w - padding * 6) / 5f
+            val cardTop = top + titleSize * 2.0f
             val cardBottom = bottom - padding
 
             upcoming.forEachIndexed { i, event ->
@@ -232,7 +232,7 @@ class CalendarOverlay
                 canvas.drawRoundRect(RectF(cardL, cardTop, cardL + 8f, cardBottom), 4f, 4f, upcomingEventBgPaint)
 
                 val contentPadding = cardW * 0.08f
-                val fontSize = h * 0.11f
+                val fontSize = h * 0.12f
                 upcomingEventPaint.textSize = fontSize
                 upcomingEventPaint.color = colorWhite
                 upcomingEventPaint.typeface = Typeface.create("sans-serif", Typeface.BOLD)
@@ -264,9 +264,9 @@ class CalendarOverlay
             canvas.drawRoundRect(panelRect, cornerRadius, cornerRadius, backgroundPaint)
 
             val columnW = w / 7f
-            val dayNameSize = h * 0.06f
-            val dayNumSize = h * 0.1f
-            val eventTextSize = h * 0.05f
+            val dayNameSize = h * 0.05f
+            val dayNumSize = h * 0.08f
+            val eventTextSize = h * 0.045f
 
             dayNamePaint.textSize = dayNameSize
             dayNamePaint.typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
@@ -370,12 +370,9 @@ class CalendarOverlay
 
         private fun getEventColor(event: CalendarEvent): Int {
             if (event.calendarColor != 0) {
-                return Color.argb(
-                    255,
-                    (Color.red(event.calendarColor) * 0.85f + 40).toInt().coerceIn(0, 255),
-                    (Color.green(event.calendarColor) * 0.85f + 40).toInt().coerceIn(0, 255),
-                    (Color.blue(event.calendarColor) * 0.85f + 40).toInt().coerceIn(0, 255),
-                )
+                // If it's a negative color (standard android color int), return it
+                // If it's a positive color (parsed from HEX), it's also valid
+                return event.calendarColor
             }
             return colorAccentBlue
         }

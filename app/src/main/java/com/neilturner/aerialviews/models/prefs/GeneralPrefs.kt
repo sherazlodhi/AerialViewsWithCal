@@ -151,8 +151,12 @@ object GeneralPrefs : KotprefModel() {
 
     var calendarSource by stringPref("SYSTEM", "calendar_source")
     var calendarIcalUrl by stringPref("", "calendar_ical_url")
+    var calendarIcalUrls by stringPref("", "calendar_ical_urls")
+    var calendarIcalColors by stringPref("", "calendar_ical_colors")
     var calendarAsSlide by booleanPref(false, "calendar_as_slide")
     var calendarSlideFrequency by intPref(20, "calendar_slide_frequency")
+    var calendarAnnouncementsEnabled by booleanPref(false, "calendar_announcements_enabled")
+    var calendarAnnouncementMinutes by intPref(5, "calendar_announcement_minutes")
 
     // Other
     var alternateTextPosition by booleanPref(true, "alt_text_position")

@@ -128,6 +128,7 @@ class KtorServer(
 
             val isClearing = text.isEmpty()
             val duration = request.duration ?: 0
+            val append = request.append ?: false
 
             // Validate textSize, if provided
             val textSize = request.textSize ?: defaultTextSize
@@ -149,7 +150,7 @@ class KtorServer(
                 return
             }
 
-            val type =
+            val type = if (request.ticker == true) OverlayType.TICKER else
                 OverlayType.entries.firstOrNull { it.name == "MESSAGE$messageNumber" } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse(error = "Invalid message number."))
                     return
@@ -162,15 +163,19 @@ class KtorServer(
                     duration,
                     textSize,
                     textWeight,
+                    append,
+                    request.ticker ?: false
                 )
             onMessageReceived(messageEvent)
 
-            val actionType = if (isClearing) "cleared" else "received"
-            Timber.i("Message $messageNumber $actionType - Text: '$text', Duration: ${duration}s, Size: $textSize, Weight: $textWeight")
+            val actionType = if (isClearing) "cleared" else if (append) "appended" else "received"
+            Timber.i("Message $messageNumber $actionType - Text: '$text', Duration: ${duration}s, Size: $textSize, Weight: $textWeight, Append: $append")
 
             val successMessage =
                 if (isClearing) {
                     "Message $messageNumber cleared successfully"
+                } else if (append) {
+                    "Message $messageNumber appended successfully"
                 } else {
                     "Message $messageNumber processed successfully"
                 }
@@ -188,10 +193,12 @@ class KtorServer(
 
 @Serializable
 data class MessageRequest(
-    val text: String?,
+    val text: String? = null,
     val duration: Int? = null,
     val textSize: Int? = null,
     val textWeight: Int? = null,
+    val append: Boolean? = null,
+    val ticker: Boolean? = null,
 )
 
 @Serializable
@@ -212,4 +219,6 @@ data class MessageEvent(
     val duration: Int? = null,
     val textSize: Int? = null,
     val textWeight: Int? = null,
+    val append: Boolean = false,
+    val isTicker: Boolean = false,
 )
