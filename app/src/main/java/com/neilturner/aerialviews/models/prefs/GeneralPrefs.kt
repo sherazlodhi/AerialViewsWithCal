@@ -58,6 +58,7 @@ object GeneralPrefs : KotprefModel() {
     var weatherLocationCustomName by stringPref("", "weather_location_custom_name")
     var weatherLocationLat by stringPref("", "weather_location_lat")
     var weatherLocationLon by stringPref("", "weather_location_lon")
+    var weatherApiKey by stringPref("", "weather_api_key")
 
     var weatherTemperatureUnits by nullableEnumValuePref(TemperatureUnit.METRIC, "weather_temperature_units")
 

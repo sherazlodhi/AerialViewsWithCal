@@ -54,7 +54,7 @@ class WeatherService(
 
     suspend fun lookupLocation(query: String): List<LocationResponse> =
         try {
-            val key = BuildConfig.OPEN_WEATHER
+            val key = GeneralPrefs.weatherApiKey.ifEmpty { BuildConfig.OPEN_WEATHER }
             val language = WeatherLanguage.getLanguageCode(context)
             val response = openWeatherClient.getLocationByName(query, 10, key, language)
             delay(lookupDelay)
@@ -93,7 +93,7 @@ class WeatherService(
         lon: Double,
     ): List<LocationResponse> =
         try {
-            val key = BuildConfig.OPEN_WEATHER
+            val key = GeneralPrefs.weatherApiKey.ifEmpty { BuildConfig.OPEN_WEATHER }
             val language = WeatherLanguage.getLanguageCode(context)
             val response = openWeatherClient.getLocationByCoordinates(lat, lon, 5, key, language)
             delay(lookupDelay)
@@ -164,7 +164,7 @@ class WeatherService(
     }
 
     internal fun buildRequestConfig(): WeatherRequestConfig? {
-        val key = BuildConfig.OPEN_WEATHER
+        val key = GeneralPrefs.weatherApiKey.ifEmpty { BuildConfig.OPEN_WEATHER }
         val lat = GeneralPrefs.weatherLocationLat.toDoubleOrNull()
         val lon = GeneralPrefs.weatherLocationLon.toDoubleOrNull()
         val units = GeneralPrefs.weatherTemperatureUnits?.toString()?.lowercase() ?: "metric"

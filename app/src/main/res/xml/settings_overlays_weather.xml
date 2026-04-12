@@ -15,6 +15,12 @@
                 app:key="weather_temperature_units"
                 app:title="@string/weather_temperature_units_title"
                 app:useSimpleSummaryProvider="true" />
+
+            <EditTextPreference
+                app:key="weather_api_key"
+                app:title="OpenWeather API Key"
+                app:summary="Enter your OpenWeather API Key (Free tier works)"
+                app:useSimpleSummaryProvider="true" />
         </PreferenceCategory>
 
         <PreferenceCategory app:title="@string/category_current_weather">
