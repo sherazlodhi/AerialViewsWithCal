@@ -158,6 +158,14 @@ object GeneralPrefs : KotprefModel() {
     var calendarAnnouncementsEnabled by booleanPref(false, "calendar_announcements_enabled")
     var calendarAnnouncementMinutes by intPref(5, "calendar_announcement_minutes")
 
+    // News & Information Slide
+    var newsEnabled by booleanPref(false, "news_enabled")
+    var newsSlideFrequency by intPref(15, "news_slide_frequency")
+    var newsIncludeWorld by booleanPref(true, "news_include_world")
+    var newsIncludePakistan by booleanPref(true, "news_include_pakistan")
+    var newsIncludeUAE by booleanPref(true, "news_include_uae")
+    var newsIncludeStocks by booleanPref(true, "news_include_stocks")
+
     // Other
     var alternateTextPosition by booleanPref(true, "alt_text_position")
 
@@ -227,6 +235,7 @@ object GeneralPrefs : KotprefModel() {
     var videoScale by nullableEnumValuePref(VideoScale.SCALE_TO_FIT_WITH_CROPPING, "video_scale")
     var playbackSpeed by stringPref("1", "playback_speed")
     var ignoreNonManifestVideos by booleanPref(false, "any_videos_ignore_non_manifest_videos")
+    var immichVideoSound by booleanPref(false, "immich_video_sound")
 
     // Playlist - Videos Advanced
     var maxVideoLength by stringPref("0", "playback_max_video_length")
@@ -243,6 +252,7 @@ object GeneralPrefs : KotprefModel() {
     var photoBackgroundBlurEnabled by booleanPref(true, "photo_background_blur_enabled")
     var photoBackgroundBlurOpacity by stringPref("40", "photo_background_blur_opacity")
     var photoBackgroundBlurIntensity by stringPref("80", "photo_background_blur_intensity")
+    var photoDualPortrait by booleanPref(true, "photo_dual_portrait")
 
     // D-pad
     var buttonLeftPress by nullableEnumValuePref(ButtonType.SKIP_PREVIOUS, "button_left_press")

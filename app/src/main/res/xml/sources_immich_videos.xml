@@ -126,6 +126,15 @@
                     app:useSimpleSummaryProvider="true" />
         </PreferenceCategory>
 
+        <PreferenceCategory app:title="Audio">
+                <SwitchPreference
+                    app:dependency="immich_media_enabled"
+                    app:key="immich_video_sound"
+                    app:title="Enable Sound"
+                    app:summary="Allow sound in videos fetched from Immich"
+                    app:defaultValue="false" />
+        </PreferenceCategory>
+
         <PreferenceCategory app:title="@string/category_advanced">
                 <ListPreference
                     app:dependency="immich_media_enabled"

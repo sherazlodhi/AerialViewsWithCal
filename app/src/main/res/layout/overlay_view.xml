@@ -20,6 +20,18 @@
             android:layout_height="200dp"
             android:visibility="gone" />
 
+        <com.neilturner.aerialviews.ui.overlays.CalendarOverlay
+            android:id="@+id/calendarSlide"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <com.neilturner.aerialviews.ui.overlays.NewsOverlay
+            android:id="@+id/newsSlide"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
         <TextView
             tools:ignore="MissingConstraints"
             android:id="@+id/emptyView1"
@@ -125,10 +137,5 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
-        <com.neilturner.aerialviews.ui.overlays.CalendarOverlay
-            android:id="@+id/calendarSlide"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

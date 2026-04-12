@@ -8,4 +8,5 @@ data class CalendarEvent(
     val isAllDay: Boolean = false,
     val calendarColor: Int = 0,
     val location: String = "",
+    val rrule: String? = null,
 )

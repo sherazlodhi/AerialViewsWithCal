@@ -14,6 +14,12 @@ class MediaPlaylist(
         return _videos[position]
     }
 
+    fun peekNextItem(): AerialMedia? {
+        if (_videos.isEmpty()) return null
+        val nextPos = calculateNext(position + 1)
+        return _videos[nextPos]
+    }
+
     fun previousItem(): AerialMedia {
         position = calculateNext(--position)
         return _videos[position]

@@ -30,6 +30,16 @@ class CalendarService(private val context: Context) : TextToSpeech.OnInitListene
     
     private var cachedEvents: List<CalendarEvent> = emptyList()
     private val announcedEventIds = mutableSetOf<String>()
+    
+    private val defaultColors = listOf(
+        Color.parseColor("#4285F4"), // Google Blue
+        Color.parseColor("#34A853"), // Google Green
+        Color.parseColor("#FBBC05"), // Google Yellow
+        Color.parseColor("#EA4335"), // Google Red
+        Color.parseColor("#9C27B0"), // Purple
+        Color.parseColor("#00BCD4"), // Cyan
+        Color.parseColor("#FF9800")  // Orange
+    )
 
     init {
         tts = TextToSpeech(context, this)
@@ -82,17 +92,31 @@ class CalendarService(private val context: Context) : TextToSpeech.OnInitListene
 
     private fun fetchAndPostEvents() {
         val events = if (GeneralPrefs.calendarSource == "ICAL") {
-            val rawUrls = if (GeneralPrefs.calendarIcalUrls.isNotEmpty()) GeneralPrefs.calendarIcalUrls else GeneralPrefs.calendarIcalUrl
-            val urls = rawUrls.split(";").filter { it.isNotBlank() }
-            val hexColors = GeneralPrefs.calendarIcalColors.split(";").filter { it.isNotBlank() }
+            val rawUrls = if (GeneralPrefs.calendarIcalUrls.isNotBlank()) GeneralPrefs.calendarIcalUrls else GeneralPrefs.calendarIcalUrl
+            val urls = rawUrls.split(";").map { it.trim() }.filter { it.isNotEmpty() }
+            val hexColors = GeneralPrefs.calendarIcalColors.split(";").map { it.trim() }
             
             val allEvents = mutableListOf<CalendarEvent>()
             urls.forEachIndexed { i, url ->
                 val colorStr = hexColors.getOrNull(i)
-                val colorInt = parseColorSafely(colorStr)
+                var colorInt = parseColorSafely(colorStr)
+                
+                // Use default color rotation if no color specified
+                if (colorInt == 0) {
+                    colorInt = defaultColors[i % defaultColors.size]
+                }
+                
+                Timber.d("CalendarService: Fetching iCal $i: $url with color $colorInt")
                 allEvents.addAll(fetchIcalEvents(url, colorInt))
             }
-            allEvents.sortedBy { it.startTime }
+            val cal = Calendar.getInstance()
+            val startOfToday = cal.apply {
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            val expansionLimit = startOfToday + 30L * 24 * 60 * 60 * 1000 // Expand 30 days
+            
+            val expanded = expandRecurringEvents(allEvents, startOfToday, expansionLimit)
+            expanded.sortedBy { it.startTime }
         } else {
             if (!hasCalendarPermission()) {
                 Timber.w("CalendarService: READ_CALENDAR permission not granted")
@@ -111,38 +135,58 @@ class CalendarService(private val context: Context) : TextToSpeech.OnInitListene
         
         val now = System.currentTimeMillis()
         val minutesBefore = GeneralPrefs.calendarAnnouncementMinutes
-        val targetTime = now + minutesBefore * 60 * 1000L
         
-        // Find events starting in the target window
-        // This ensures the 1-minute loop catches it
+        // 1. Upcoming announcements (X minutes before)
+        val targetTimeUpcoming = now + minutesBefore * 60 * 1000L
         val upcoming = cachedEvents.filter { 
             !it.isAllDay && 
             it.startTime > now && 
-            it.startTime <= targetTime + 60 * 1000L && // started within 1 minute of target
-            it.startTime >= targetTime - 60 * 1000L
+            it.startTime <= targetTimeUpcoming + 60 * 1000L && 
+            it.startTime >= targetTimeUpcoming - 60 * 1000L
         }
 
         upcoming.forEach { event ->
-            val eventKey = "announce_${event.startTime}_${event.title}"
+            val eventKey = "announce_pre_${event.startTime}_${event.title}"
             if (!announcedEventIds.contains(eventKey)) {
-                announceEvent(event)
+                announceEvent(event, isStartingNow = false)
                 announcedEventIds.add(eventKey)
             }
         }
-        
+
+        // 2. Immediate alerts (at start time)
+        val startingNow = cachedEvents.filter {
+            !it.isAllDay &&
+            it.startTime <= now + 30 * 1000L && 
+            it.startTime >= now - 30 * 1000L
+        }
+
+        startingNow.forEach { event ->
+            val eventKey = "announce_now_${event.startTime}_${event.title}"
+            if (!announcedEventIds.contains(eventKey)) {
+                announceEvent(event, isStartingNow = true)
+                announcedEventIds.add(eventKey)
+            }
+        }
         // Clean up old IDs once a day or periodically
         if (announcedEventIds.size > 100) {
-            val recentlyannounced = announcedEventIds.filter { it.substringAfter("announce_").substringBefore("_").toLongOrNull() ?: 0L > now - 24 * 60 * 60 * 1000L }
+            val recentlyannounced = announcedEventIds.filter { 
+                it.substringAfter("announce_pre_").substringAfter("announce_now_")
+                .substringBefore("_").toLongOrNull() ?: 0L > now - 24 * 60 * 60 * 1000L 
+            }
             announcedEventIds.clear()
             announcedEventIds.addAll(recentlyannounced)
         }
     }
 
-    private fun announceEvent(event: CalendarEvent) {
-        val minutesBefore = GeneralPrefs.calendarAnnouncementMinutes
-        val text = "Next event, ${event.title}, starts in $minutesBefore minutes"
+    private fun announceEvent(event: CalendarEvent, isStartingNow: Boolean) {
+        val text = if (isStartingNow) {
+            "Your event, ${event.title}, is starting now"
+        } else {
+            val minutesBefore = GeneralPrefs.calendarAnnouncementMinutes
+            "Next event, ${event.title}, starts in $minutesBefore minutes"
+        }
         Timber.i("CalendarService: Announcing: $text")
-        tts?.speak(text, TextToSpeech.QUEUE_ADD, null, "announcement_${event.startTime}")
+        tts?.speak(text, TextToSpeech.QUEUE_ADD, null, "announcement_${event.startTime}_$isStartingNow")
     }
 
     private fun parseColorSafely(hex: String?): Int {
@@ -157,7 +201,10 @@ class CalendarService(private val context: Context) : TextToSpeech.OnInitListene
 
     private fun fetchIcalEvents(url: String, color: Int): List<CalendarEvent> {
         return try {
-            val client = OkHttpClient()
+            val client = OkHttpClient.Builder()
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
             val request = Request.Builder()
                 .url(url.trim())
                 .addHeader("Cache-Control", "no-cache")
@@ -178,13 +225,20 @@ class CalendarService(private val context: Context) : TextToSpeech.OnInitListene
     }
 
     private fun parseIcal(data: String, calendarColor: Int): List<CalendarEvent> {
+        val unfolded = data.replace(Regex("\r?\n[ \t]"), "")
         val events = mutableListOf<CalendarEvent>()
-        val lines = data.lines().map { it.trim() }
+        val lines = unfolded.lines().map { it.trim() }
         var currentEvent: CalendarEvent? = null
         var inEvent = false
 
-        val now = System.currentTimeMillis()
-        val limit = now + 60L * 24 * 60 * 60 * 1000 // 60 days
+        val calendar = Calendar.getInstance()
+        val startOfToday = calendar.apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val limit = startOfToday + 60L * 24 * 60 * 60 * 1000 // 60 days
 
         for (line in lines) {
             when {
@@ -195,8 +249,13 @@ class CalendarService(private val context: Context) : TextToSpeech.OnInitListene
                 line.startsWith("END:VEVENT") -> {
                     inEvent = false
                     currentEvent?.let {
-                        if (it.endTime > now && it.startTime < limit) {
-                            events.add(it)
+                        // If end time is missing, default based on event type
+                        val duration = if (it.isAllDay) 86400000L else 3600000L
+                        val finalEnd = if (it.endTime == 0L) it.startTime + duration else it.endTime
+                        val event = it.copy(endTime = finalEnd)
+                        // Add base event if it's within range, or let expandRecurring handle it if it has RRULE
+                        if (event.rrule != null || (event.endTime >= startOfToday && event.startTime < limit)) {
+                            events.add(event)
                         }
                     }
                     currentEvent = null
@@ -205,17 +264,21 @@ class CalendarService(private val context: Context) : TextToSpeech.OnInitListene
                     val colonPos = line.indexOf(':')
                     if (colonPos == -1) continue
                     val key = line.substring(0, colonPos)
-                    val value = line.substring(colonPos + 1)
+                    var value = if (line.length > colonPos + 1) line.substring(colonPos + 1) else ""
+                    
+                    // Handle quoted values or multi-line values truncated by simple colonPos (rare in unfolded)
+                    if (value.startsWith("\"") && value.endsWith("\"")) value = value.substring(1, value.length - 1)
 
                     when {
                         key.startsWith("SUMMARY") -> currentEvent = currentEvent?.copy(title = value)
                         key.startsWith("LOCATION") -> currentEvent = currentEvent?.copy(location = value)
+                        key.startsWith("RRULE") -> currentEvent = currentEvent?.copy(rrule = value)
                         key.startsWith("DTSTART") -> {
-                            val time = parseIcalTime(value)
-                            currentEvent = currentEvent?.copy(startTime = time, isAllDay = !value.contains('T'))
+                            val time = parseIcalTime(value, key)
+                            currentEvent = currentEvent?.copy(startTime = time, isAllDay = key.contains("VALUE=DATE"))
                         }
                         key.startsWith("DTEND") -> {
-                            val time = parseIcalTime(value)
+                            val time = parseIcalTime(value, key)
                             currentEvent = currentEvent?.copy(endTime = time)
                         }
                     }
@@ -225,20 +288,61 @@ class CalendarService(private val context: Context) : TextToSpeech.OnInitListene
         return events
     }
 
-    private fun parseIcalTime(value: String): Long {
+    private fun parseIcalTime(value: String, key: String): Long {
         return try {
-            val cleanValue = value.substringAfterLast(':').substringAfterLast('=')
+            val tzid = if (key.contains("TZID=")) key.substringAfter("TZID=").substringBefore(';').substringBefore(':') else ""
+            val cleanValue = value.trim()
             val formatStr = if (cleanValue.contains('T')) {
                 if (cleanValue.endsWith('Z')) "yyyyMMdd'T'HHmmss'Z'" else "yyyyMMdd'T'HHmmss"
             } else {
                 "yyyyMMdd"
             }
             val sdf = SimpleDateFormat(formatStr, Locale.US)
-            if (cleanValue.endsWith('Z')) sdf.timeZone = TimeZone.getTimeZone("UTC")
+            if (cleanValue.endsWith('Z')) {
+                sdf.timeZone = TimeZone.getTimeZone("UTC")
+            } else if (tzid.isNotEmpty()) {
+                sdf.timeZone = TimeZone.getTimeZone(tzid)
+            }
             sdf.parse(cleanValue)?.time ?: 0L
         } catch (e: Exception) {
             0L
         }
+    }
+
+    private fun expandRecurringEvents(events: List<CalendarEvent>, start: Long, end: Long): List<CalendarEvent> {
+        val expanded = mutableListOf<CalendarEvent>()
+        for (event in events) {
+            if (event.rrule == null) {
+                expanded.add(event)
+                continue
+            }
+
+            // Simple RRULE expansion for DAILY/WEEKLY
+            val rrule = event.rrule!!
+            val freq = if (rrule.contains("FREQ=DAILY")) "DAILY" else if (rrule.contains("FREQ=WEEKLY")) "WEEKLY" else ""
+            if (freq.isEmpty()) {
+                expanded.add(event) // Fallback: just add the first one
+                continue
+            }
+
+            val interval = if (freq == "DAILY") 86400000L else 7 * 86400000L
+            var currentStart = event.startTime
+            var currentEnd = event.endTime
+            val duration = currentEnd - currentStart
+
+            // Multi-instance expansion for the current view window
+            while (currentStart < end) {
+                if (currentEnd > start) {
+                    expanded.add(event.copy(startTime = currentStart, endTime = currentEnd))
+                }
+                currentStart += interval
+                currentEnd = currentStart + duration
+                
+                // Safety break to prevent infinite loops (though window is small)
+                if (expanded.count { it.title == event.title } > 100) break 
+            }
+        }
+        return expanded
     }
 
     private fun hasCalendarPermission(): Boolean = PermissionHelper.hasCalendarPermission(context)

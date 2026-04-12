@@ -123,12 +123,12 @@ class VideoPlayerView
 
             VideoPlayerHelper.setupMediaSource(exoPlayer, media)
 
-            val shouldMute = GeneralPrefs.muteVideos || isMuted
+            val isImmich = media.source == AerialMediaSource.IMMICH
+            val shouldMute = if (isImmich) !GeneralPrefs.immichVideoSound else GeneralPrefs.muteVideos
+            
             if (shouldMute) {
-                VideoPlayerHelper.toggleAudioTrack(exoPlayer, true)
                 exoPlayer.volume = 0f
             } else {
-                VideoPlayerHelper.toggleAudioTrack(exoPlayer, false)
                 exoPlayer.volume = GeneralPrefs.videoVolume.toFloat() / 100
             }
             isMuted = shouldMute
@@ -150,11 +150,9 @@ class VideoPlayerView
         fun toggleMute() {
             cancelVolumeFade()
             if (isMuted) {
-                VideoPlayerHelper.toggleAudioTrack(exoPlayer, false)
                 exoPlayer.volume = GeneralPrefs.videoVolume.toFloat() / 100
                 isMuted = false
             } else {
-                VideoPlayerHelper.toggleAudioTrack(exoPlayer, true)
                 exoPlayer.volume = 0f
                 isMuted = true
             }

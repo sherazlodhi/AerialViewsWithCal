@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        app:title="@string/category_news"
+        app:key="category_news">
+
+        <SwitchPreferenceCompat
+            app:key="news_enabled"
+            app:title="@string/news_enabled_title"
+            app:summary="@string/news_enabled_summary"
+            app:defaultValue="false" />
+
+        <SeekBarPreference
+            app:key="news_slide_frequency"
+            app:title="@string/news_slide_frequency_title"
+            app:summary="@string/news_slide_frequency_summary"
+            app:defaultValue="15"
+            app:min="5"
+            android:max="100"
+            app:showSeekBarValue="true"
+            app:dependency="news_enabled" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="Content Sources"
+        app:key="category_news_sources"
+        app:dependency="news_enabled">
+
+        <SwitchPreferenceCompat
+            app:key="news_include_world"
+            app:title="@string/news_include_world_title"
+            app:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            app:key="news_include_pakistan"
+            app:title="@string/news_include_pakistan_title"
+            app:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            app:key="news_include_uae"
+            app:title="@string/news_include_uae_title"
+            app:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            app:key="news_include_stocks"
+            app:title="@string/news_include_stocks_title"
+            app:defaultValue="true" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

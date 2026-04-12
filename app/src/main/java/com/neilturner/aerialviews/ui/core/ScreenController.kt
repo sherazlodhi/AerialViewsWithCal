@@ -45,6 +45,8 @@ import com.neilturner.aerialviews.ui.overlays.state.OverlayEventBridge
 import com.neilturner.aerialviews.ui.overlays.state.MessageOverlayState
 import com.neilturner.aerialviews.ui.overlays.state.OverlayStateStore
 import com.neilturner.aerialviews.ui.overlays.state.OverlayUiState
+import com.neilturner.aerialviews.services.NewsService
+import com.neilturner.aerialviews.ui.overlays.NewsOverlay
 import com.neilturner.aerialviews.utils.ColourHelper
 import com.neilturner.aerialviews.utils.FontHelper
 import com.neilturner.aerialviews.utils.GradientHelper
@@ -80,6 +82,7 @@ class ScreenController(
     private var nowPlayingService: NowPlayingService? = null
     private var weatherService: WeatherService? = null
     private var calendarService: CalendarService? = null
+    private var newsService: NewsService? = null
     private var ktorServer: KtorServer? = null
     private var ttsService: TtsService? = null
     private val overlayStateStore = OverlayStateStore()
@@ -94,6 +97,7 @@ class ScreenController(
     private val mediaFadeIn = GeneralPrefs.mediaFadeInDuration.toLong()
     private val mediaFadeOut = GeneralPrefs.mediaFadeOutDuration.toLong()
 
+    private var isDualLoading = false
     private var canShowOverlays = false
     private var alternate = false
     private var previousItem = false
@@ -196,6 +200,14 @@ class ScreenController(
         this.topLeftIds = overlayIds.topLeftIds
         this.topRightIds = overlayIds.topRightIds
         bindOverlayState()
+        
+        // Setup news overlay rendering
+        mainScope.launch {
+            overlayStateStore.uiState.collectLatest { state ->
+                overlayViewBinding.newsSlide.render(state.news)
+            }
+        }
+
         overlayEventBridge.start()
 
         // Setup progress bar
@@ -283,6 +295,11 @@ class ScreenController(
             if (overlayHelper.findOverlay<CalendarOverlay>().isNotEmpty() || GeneralPrefs.calendarAsSlide) {
                 calendarService = CalendarService(context).apply { startUpdates() }
             }
+
+            // Setup news service
+            if (GeneralPrefs.newsEnabled) {
+                newsService = NewsService(context).apply { startUpdates() }
+            }
         }
         // 1. Load playlist
         // 2. load video, setup location/POI, start playback call
@@ -357,10 +374,12 @@ class ScreenController(
 
         // Images
         if (media.type == AerialMediaType.IMAGE) {
+            isDualLoading = false
             imagePlayer.setImage(media)
             imageViewBinding.root.visibility = View.VISIBLE
             videoViewBinding.root.visibility = View.INVISIBLE
             overlayViewBinding.calendarSlide.visibility = View.GONE
+            overlayViewBinding.newsSlide.visibility = View.GONE
         }
 
         // Calendar Slide
@@ -377,8 +396,23 @@ class ScreenController(
                     fadeOutCurrentItem()
                 }
             }
-        } else if (media.type != AerialMediaType.CALENDAR) {
+        } else if (media.type == AerialMediaType.INFO) {
+            newsService?.refreshNow()
+            overlayViewBinding.newsSlide.visibility = View.VISIBLE
+            videoViewBinding.root.visibility = View.INVISIBLE
+            imageViewBinding.root.visibility = View.INVISIBLE
             overlayViewBinding.calendarSlide.visibility = View.GONE
+            
+            mainScope.launch {
+                fadeInNextItem()
+                delay(GeneralPrefs.slideshowSpeed.toLong() * 2000L)
+                if (currentMedia?.type == AerialMediaType.INFO) {
+                    fadeOutCurrentItem()
+                }
+            }
+        } else if (media.type != AerialMediaType.CALENDAR && media.type != AerialMediaType.INFO) {
+            overlayViewBinding.calendarSlide.visibility = View.GONE
+            overlayViewBinding.newsSlide.visibility = View.GONE
         }
 
         // Best to rest progress bar (if enabled) before media playback
@@ -494,6 +528,7 @@ class ScreenController(
                 imageViewBinding.imagePlayer.stop()
 
                 overlayViewBinding.calendarSlide.visibility = View.GONE
+                overlayViewBinding.newsSlide.visibility = View.GONE
 
                 // Reset pause state when transitioning between items
                 isPaused = false
@@ -625,6 +660,7 @@ class ScreenController(
         nowPlayingService?.stop()
         weatherService?.stop()
         calendarService?.stop()
+        newsService?.stop()
         sleepTimerJob?.cancel()
         metadataJobs.values.forEach { it.cancel() }
         metadataJobs.clear()
@@ -924,6 +960,19 @@ class ScreenController(
             ?.takeIf { it.type == AerialMediaType.IMAGE }
             ?.let { updateMetadataOverlayData(it) }
         fadeInNextItem()
+    }
+
+    override fun onImageOrientationDetected(isPortrait: Boolean) {
+        if (GeneralPrefs.photoDualPortrait && isPortrait && !isDualLoading) {
+            val nextMedia = playlist.peekNextItem()
+            if (nextMedia?.type == AerialMediaType.IMAGE) {
+                // We don't know if the next one is portrait yet, 
+                // but we'll try to load it into the second slot.
+                isDualLoading = true
+                playlist.nextItem() // Consume it from playlist
+                imagePlayer.setDualImages(currentMedia!!, nextMedia)
+            }
+        }
     }
 
     private fun bindOverlayState() {

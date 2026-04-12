@@ -4,6 +4,8 @@ import com.neilturner.aerialviews.models.enums.MetadataType
 import com.neilturner.aerialviews.models.enums.OverlayType
 import com.neilturner.aerialviews.services.MusicEvent
 import com.neilturner.aerialviews.services.CalendarEvent
+import com.neilturner.aerialviews.services.NewsItem
+import com.neilturner.aerialviews.services.StockItem
 import com.neilturner.aerialviews.services.weather.ForecastEvent
 import com.neilturner.aerialviews.services.weather.WeatherEvent
 import com.neilturner.aerialviews.ui.overlays.ProgressState
@@ -92,6 +94,10 @@ class OverlayStateStore {
 
     fun setCalendar(events: List<CalendarEvent>) {
         _uiState.update { it.copy(calendar = CalendarOverlayState(events)) }
+    }
+
+    fun setNews(news: List<NewsItem>, stocks: List<StockItem>) {
+        _uiState.update { it.copy(news = NewsOverlayState(news, stocks)) }
     }
 
     fun setProgress(

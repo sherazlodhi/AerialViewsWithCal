@@ -4,4 +4,5 @@ enum class AerialMediaType {
     VIDEO,
     IMAGE,
     CALENDAR,
+    INFO,
 }

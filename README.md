@@ -25,9 +25,10 @@ Inspired by Apple TV's beautiful video screensaver!
 * Many playlist options to limit media length or loop certain videos
 * Use the D-Pad or swipe (on phones, tablets, etc) to skip media, skip songs, change speed, seek, pause and more
 * Refresh rate switching for 24fps, 50fps content
+* **Enhanced Immich Integration**: Native support for Immich video sound (configurable), and intelligent handling of portrait media. Vertical photos automatically generate a blurred background to fill the screen, and videos are played at the correct scale.
+* **Robust iCal Parsing**: Support for timezones (TZID), basic recurring events (DAILY/WEEKLY), and multi-line event data for seamless Google Calendar integration.
 * **Advanced Calendar Integration**: Support for multiple iCal (.ics) feeds with custom color coding, full-screen 7-day dashboard slide, and "Today-only" corner overlays.
 * **Proactive Voice Announcements**: Integrated Text-to-Speech (TTS) engine that verbally announces upcoming calendar events before they start.
-* **Smart Video & Photo Scaling**: Automatic detection of vertical (portrait) content from sources like Immich. Videos are played in "FIT" mode to prevent squishing, and photos automatically generate a beautiful blurred background to fill the screen while showing the full image.
 
 ## Support the project
 

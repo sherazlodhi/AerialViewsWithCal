@@ -173,6 +173,24 @@ class MediaService(
                 filteredMedia = newList
             }
 
+            if (GeneralPrefs.newsEnabled) {
+                val cycle = GeneralPrefs.newsSlideFrequency.coerceAtLeast(1)
+                val newList = mutableListOf<AerialMedia>()
+                filteredMedia.forEachIndexed { index, media ->
+                    newList.add(media)
+                    if ((index + 1) % cycle == 0) {
+                        newList.add(
+                            AerialMedia(
+                                uri = android.net.Uri.parse("news://view"),
+                                type = AerialMediaType.INFO,
+                                source = AerialMediaSource.UNKNOWN,
+                            )
+                        )
+                    }
+                }
+                filteredMedia = newList
+            }
+
             Timber.i("Total media items: ${filteredMedia.size}")
             return@withContext MediaPlaylist(filteredMedia)
         }

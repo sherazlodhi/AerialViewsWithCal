@@ -68,5 +68,10 @@
                     app:summary="@string/appearance_calendar_summary"
                     app:fragment="com.neilturner.aerialviews.ui.settings.OverlaysCalendarFragment"/>
 
+                <Preference
+                    app:title="@string/appearance_news_title"
+                    app:summary="@string/appearance_news_summary"
+                    app:fragment="com.neilturner.aerialviews.ui.settings.OverlaysNewsFragment"/>
+
         </PreferenceCategory>
 </PreferenceScreen>

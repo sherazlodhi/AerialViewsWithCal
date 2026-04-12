@@ -67,9 +67,15 @@ class ImagePlayerView : FrameLayout {
     private var backgroundReadyToken: Long = -1
     private var pendingSetupToken: Long = -1
 
+    private var isDualPortraitMode = false
     private val foregroundImageView =
         AppCompatImageView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+        }
+    private val secondImageView =
+        AppCompatImageView(context).apply {
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+            visibility = GONE
         }
     private val backgroundImageView =
         AppCompatImageView(context).apply {
@@ -93,6 +99,7 @@ class ImagePlayerView : FrameLayout {
     init {
         addView(backgroundImageView)
         addView(foregroundImageView)
+        addView(secondImageView)
     }
 
     fun release() {
@@ -144,29 +151,38 @@ class ImagePlayerView : FrameLayout {
             stream.unread(headerBytes, 0, headerLength)
 
             val exifMetadata = BitmapHelper.extractExifMetadataFromHeader(headerBytes, headerLength)
-
-            if (media.source != AerialMediaSource.IMMICH) {
-                media.metadata.exif.date = exifMetadata.date
-                media.metadata.exif.offset = exifMetadata.offset
-                media.metadata.exif.latitude = exifMetadata.latitude
-                media.metadata.exif.longitude = exifMetadata.longitude
-                media.metadata.exif.description = exifMetadata.description
-            }
+            val isPortrait = exifMetadata.orientation == 6 || exifMetadata.orientation == 8
+            media.isPortrait = isPortrait
 
             Timber.d(
-                "ImagePlayerView: Extracted EXIF in ${System.currentTimeMillis() - totalStartTime}ms. source=${media.source} exifDate=%s exifOffset=%s lat=%s lon=%s orientation=%d",
-                exifMetadata.date,
-                exifMetadata.offset,
-                exifMetadata.latitude,
-                exifMetadata.longitude,
-                exifMetadata.orientation,
+                "ImagePlayerView: Extracted EXIF in ${System.currentTimeMillis() - totalStartTime}ms. source=${media.source} isPortrait=$isPortrait orientation=${exifMetadata.orientation}",
             )
 
-            loadImage(stream)
+            mainScope.launch {
+                listener?.onImageOrientationDetected(isPortrait)
+            }
+
+            loadImage(stream, isSecondary = false)
         }
     }
 
-    private fun loadImage(data: Any?) {
+    fun setDualImages(media1: AerialMedia, media2: AerialMedia) {
+        isDualPortraitMode = true
+        setImage(media1) // This will load first one into foreground
+        // We'll need another way to load the second one
+        loadSecondImage(media2)
+    }
+
+    private fun loadSecondImage(media: AerialMedia) {
+        ioScope.launch {
+            val stream = ImagePlayerHelper.streamFromMedia(context, media)
+            if (stream != null) {
+                loadImage(stream, isSecondary = true)
+            }
+        }
+    }
+
+    private fun loadImage(data: Any?, isSecondary: Boolean = false) {
         // Errors from the actual async network/disk load are delivered via onError, not here.
         try {
             val (targetWidth, targetHeight) = resolveTargetSize()
@@ -181,19 +197,27 @@ class ImagePlayerView : FrameLayout {
                         },
                         onSuccess = { image ->
                             val drawable = image.asDrawable(resources)
-                            
-                            // Check for aspect ratio mismatch to determine if we should force blur background
-                            val photoAR = if (image.height > 0) image.width.toFloat() / image.height.toFloat() else 1f
-                            val screenAR = resolveScreenAspectRatio()
-                            val isMismatch = kotlin.math.abs(photoAR - screenAR) > 0.1f
-                            
-                            blurHelper.update(drawable, forceShow = isMismatch)
-                            foregroundImageView.setImageDrawable(drawable)
+                            if (isSecondary) {
+                                secondImageView.setImageDrawable(drawable)
+                                secondImageView.visibility = VISIBLE
+                                updateDualLayout()
+                            } else {
+                                // Check for aspect ratio mismatch to determine if we should force blur background
+                                val photoAR = if (image.height > 0) image.width.toFloat() / image.height.toFloat() else 1f
+                                val screenAR = resolveScreenAspectRatio()
+                                val isMismatch = kotlin.math.abs(photoAR - screenAR) > 0.1f
+                                
+                                blurHelper.update(drawable, forceShow = isMismatch)
+                                foregroundImageView.setImageDrawable(drawable)
+                                if (isDualPortraitMode) updateDualLayout()
+                            }
                         },
                     ).listener(
                         onSuccess = { _, result ->
-                            setScaleMode(result.image.width, result.image.height)
-                            setupFinishedRunnable()
+                            if (!isSecondary) {
+                                setScaleMode(result.image.width, result.image.height)
+                                setupFinishedRunnable()
+                            }
                         },
                         onError = { _, result ->
                             handleImageError(result.throwable)
@@ -267,9 +291,33 @@ class ImagePlayerView : FrameLayout {
         onPlayerError()
     }
 
+    private fun updateDualLayout() {
+        if (!isDualPortraitMode) {
+            foregroundImageView.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+            secondImageView.visibility = GONE
+            return
+        }
+
+        val width = resolveTargetSize().first
+        val halfWidth = width / 2
+        
+        foregroundImageView.layoutParams = LayoutParams(halfWidth, LayoutParams.MATCH_PARENT).apply {
+            gravity = android.view.Gravity.START
+        }
+        foregroundImageView.scaleType = ImageView.ScaleType.FIT_CENTER
+        
+        secondImageView.layoutParams = LayoutParams(halfWidth, LayoutParams.MATCH_PARENT).apply {
+            gravity = android.view.Gravity.END
+        }
+        secondImageView.scaleType = ImageView.ScaleType.FIT_CENTER
+    }
+
     fun stop() {
         removeCallbacks(finishedRunnable)
         foregroundImageView.setImageBitmap(null)
+        secondImageView.setImageBitmap(null)
+        secondImageView.visibility = GONE
+        isDualPortraitMode = false
         pausedTimestamp = 0
         remainingDuration = 0
         blurHelper.cancel()
@@ -371,5 +419,7 @@ class ImagePlayerView : FrameLayout {
         fun onImageError()
 
         fun onImagePrepared()
+
+        fun onImageOrientationDetected(isPortrait: Boolean)
     }
 }

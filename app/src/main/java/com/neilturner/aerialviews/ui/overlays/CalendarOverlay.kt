@@ -76,6 +76,13 @@ class CalendarOverlay
             invalidate()
         }
 
+        private val militaryTimeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+
+        private fun getEventTitleWithTime(event: CalendarEvent): String {
+            val timePrefix = if (event.isAllDay) "All Day - " else "${militaryTimeFormat.format(Date(event.startTime))} - "
+            return timePrefix + event.title
+        }
+
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
             val desiredWidth = 1000 // roughly 1/3 of a 4K screen width
             val desiredHeight = 600
@@ -91,7 +98,7 @@ class CalendarOverlay
 
             val w = width.toFloat()
             val h = height.toFloat()
-            val padding = w * 0.02f
+            val padding = w * 0.01f
             
             if (isFullSlide) {
                 // Full Screen Slide: Top Panel + Weekly Grid
@@ -129,11 +136,10 @@ class CalendarOverlay
             canvas.drawRoundRect(panelRect, cornerRadius, cornerRadius, backgroundPaint)
 
             val padding = w * 0.08f
-            val now = System.currentTimeMillis()
             val startOfToday = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
             }.timeInMillis
-            val endOfToday = startOfToday + 24 * 60 * 60 * 1000
+            val endOfToday = startOfToday + 24 * 60 * 60 * 1000 - 1
 
             val todaysEvents = events.filter { 
                 (it.startTime in startOfToday..endOfToday) || (it.isAllDay && it.startTime <= endOfToday && it.endTime >= startOfToday)
@@ -176,7 +182,8 @@ class CalendarOverlay
 
                 upcomingEventPaint.textSize = dynamicTextSize
                 upcomingEventPaint.color = colorWhite
-                canvas.drawText(truncateText(event.title, upcomingEventPaint, w - padding * 2.5f), 
+                val fullTitle = getEventTitleWithTime(event)
+                canvas.drawText(truncateText(fullTitle, upcomingEventPaint, w - padding * 2.5f), 
                     left + padding + 15f, itemTop + itemHeight * 0.6f, upcomingEventPaint)
             }
         }
@@ -201,9 +208,11 @@ class CalendarOverlay
             canvas.drawText("TODAY & UPCOMING", left + padding, top + titleSize * 1.5f, upcomingTitlePaint)
 
             // Prominent upcoming cards
-            val now = System.currentTimeMillis()
+            val startOfToday = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
             val upcoming = events
-                .filter { (it.endTime > now || it.isAllDay) && it.startTime < now + 7L * 24 * 60 * 60 * 1000 }
+                .filter { (it.endTime >= startOfToday) && it.startTime < startOfToday + 7L * 24 * 60 * 60 * 1000 }
                 .take(5) 
 
             if (upcoming.isEmpty()) {
@@ -232,8 +241,13 @@ class CalendarOverlay
                 canvas.drawRoundRect(RectF(cardL, cardTop, cardL + 8f, cardBottom), 4f, 4f, upcomingEventBgPaint)
 
                 val contentPadding = cardW * 0.08f
-                val fontSize = h * 0.12f
+                var fontSize = h * 0.10f
                 upcomingEventPaint.textSize = fontSize
+                val maxTitleW = cardW - contentPadding * 2 - 15f
+                if (upcomingEventPaint.measureText(event.title) > maxTitleW) {
+                    fontSize = h * 0.085f
+                    upcomingEventPaint.textSize = fontSize
+                }
                 upcomingEventPaint.color = colorWhite
                 upcomingEventPaint.typeface = Typeface.create("sans-serif", Typeface.BOLD)
                 
@@ -264,9 +278,9 @@ class CalendarOverlay
             canvas.drawRoundRect(panelRect, cornerRadius, cornerRadius, backgroundPaint)
 
             val columnW = w / 7f
-            val dayNameSize = h * 0.05f
-            val dayNumSize = h * 0.08f
-            val eventTextSize = h * 0.045f
+            val dayNameSize = h * 0.04f
+            val dayNumSize = h * 0.06f
+            val eventTextSize = h * 0.038f
 
             dayNamePaint.textSize = dayNameSize
             dayNamePaint.typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
@@ -279,11 +293,15 @@ class CalendarOverlay
             cal.set(Calendar.HOUR_OF_DAY, 0)
             cal.set(Calendar.MINUTE, 0)
             cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
             val startTime = cal.timeInMillis
 
             // 1. Find the day with the most events to determine scaling
             var maxEventsOnAnyDay = 0
-            val tempCal = Calendar.getInstance().apply { timeInMillis = startTime }
+            val tempCal = Calendar.getInstance().apply { 
+                timeInMillis = startTime
+                set(Calendar.MILLISECOND, 0)
+            }
             for (i in 0 until 7) {
                 val ds = tempCal.timeInMillis
                 val de = ds + 24 * 60 * 60 * 1000 - 1
@@ -324,9 +342,9 @@ class CalendarOverlay
 
                 dayNumberPaint.color = if (isToday) colorWhite else colorWhite40
                 val dayNum = cal.get(Calendar.DAY_OF_MONTH).toString()
-                canvas.drawText(dayNum, cx, top + h * 0.25f, dayNumberPaint)
+                canvas.drawText(dayNum, cx, top + h * 0.22f, dayNumberPaint)
 
-                drawEventsForDayInGrid(canvas, cal, cx, top + h * 0.35f, columnW, bottom - h * 0.05f, dynamicEventTextSize)
+                drawEventsForDayInGrid(canvas, cal, cx, top + h * 0.28f, columnW, bottom - h * 0.05f, dynamicEventTextSize)
 
                 cal.add(Calendar.DAY_OF_YEAR, 1)
             }
@@ -348,7 +366,7 @@ class CalendarOverlay
             
             dayEvents.forEachIndexed { index, event ->
                 val itemTop = top + index * itemH
-                val itemRect = RectF(cx - width / 2 + 10f, itemTop, cx + width / 2 - 10f, itemTop + itemH * 0.85f)
+                val itemRect = RectF(cx - width / 2 + 2f, itemTop, cx + width / 2 - 2f, itemTop + itemH * 0.85f)
                 
                 headerPaint.shader = null
                 headerPaint.color = colorEventLabelBg
@@ -358,13 +376,22 @@ class CalendarOverlay
                 headerPaint.color = accentColor
                 canvas.drawRect(itemRect.left, itemRect.top, itemRect.left + 6f, itemRect.bottom, headerPaint)
                 
-                upcomingEventPaint.textSize = textSize
-                upcomingEventPaint.color = colorWhite
-                upcomingEventPaint.typeface = Typeface.create("sans-serif-condensed", Typeface.NORMAL)
+                upcomingEventPaint.textSize = textSize * 0.85f
+                upcomingEventPaint.color = colorWhite70
+                upcomingEventPaint.typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
                 upcomingEventPaint.textAlign = Paint.Align.LEFT
                 
-                val text = truncateText(event.title, upcomingEventPaint, itemRect.width() - 15f)
-                canvas.drawText(text, itemRect.left + 15f, itemRect.centerY() + textSize * 0.35f, upcomingEventPaint)
+                val timeStr = if (event.isAllDay) "All" else SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(event.startTime))
+                val timeWidth = upcomingEventPaint.measureText(timeStr)
+                canvas.drawText(timeStr, itemRect.left + 5f, itemRect.centerY() + textSize * 0.35f, upcomingEventPaint)
+                
+                upcomingEventPaint.textSize = textSize * 0.9f
+                upcomingEventPaint.color = colorWhite
+                upcomingEventPaint.typeface = Typeface.create("sans-serif-condensed", Typeface.NORMAL)
+                
+                val titleX = itemRect.left + 5f + timeWidth + 5f
+                val title = truncateText(event.title, upcomingEventPaint, itemRect.right - titleX - 2f)
+                canvas.drawText(title, titleX, itemRect.centerY() + textSize * 0.35f, upcomingEventPaint)
             }
         }
 
@@ -379,7 +406,7 @@ class CalendarOverlay
 
         private fun formatEventTime(event: CalendarEvent): String {
             if (event.isAllDay) return "All day"
-            val sdf = SimpleDateFormat("EEE, MMM d • h:mm a", Locale.getDefault())
+            val sdf = SimpleDateFormat("EEE, MMM d • HH:mm", Locale.getDefault())
             return sdf.format(Date(event.startTime))
         }
 

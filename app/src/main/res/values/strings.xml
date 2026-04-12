@@ -451,6 +451,18 @@
     <string name="calendar_enabled_summary">Show a beautiful monthly calendar with upcoming events over the screensaver</string>
     <string name="calendar_info_title">Calendar Permission</string>
     <string name="calendar_info_summary">Grant the READ_CALENDAR permission to this app in Android Settings → Apps → Aerial Views → Permissions → Calendar to allow reading events from your calendar.</string>
+    
+    <string name="category_news">News &amp; Information</string>
+    <string name="appearance_news_title">News &amp; Stocks</string>
+    <string name="appearance_news_summary">Display world news and stock market highlights as a dedicated slide</string>
+    <string name="news_enabled_title">Enable news slide</string>
+    <string name="news_enabled_summary">Include a dedicated news and stock information slide in the media rotation</string>
+    <string name="news_slide_frequency_title">Slide Frequency</string>
+    <string name="news_slide_frequency_summary">How many media items between news slides</string>
+    <string name="news_include_world_title">Include World News</string>
+    <string name="news_include_pakistan_title">Include Pakistan News</string>
+    <string name="news_include_uae_title">Include UAE News</string>
+    <string name="news_include_stocks_title">Include Stock Highlights</string>
 
     <!-- Main / Settings / Overlays / Rows -->
     <string name="appearance_slot1_title">Lower Slot</string>
