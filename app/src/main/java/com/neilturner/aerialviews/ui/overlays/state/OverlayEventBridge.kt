@@ -4,6 +4,7 @@ import com.neilturner.aerialviews.services.MessageEvent
 import com.neilturner.aerialviews.services.MusicEvent
 import com.neilturner.aerialviews.services.CalendarDataEvent
 import com.neilturner.aerialviews.services.InfoDataEvent
+import com.neilturner.aerialviews.services.HomeStatusItem
 import com.neilturner.aerialviews.services.weather.ForecastEvent
 import com.neilturner.aerialviews.services.weather.WeatherEvent
 import com.neilturner.aerialviews.ui.overlays.ProgressBarEvent
@@ -32,7 +33,7 @@ class OverlayEventBridge(
             store.setCalendar(event.events)
         }
         receiver.subscribe<InfoDataEvent> { event ->
-            store.setNews(event.news, event.stocks)
+            store.setNews(event.news, event.stocks, event.homeStatus)
         }
         receiver.subscribe<ProgressBarEvent> { event ->
             store.setProgress(event.state, event.position, event.duration)

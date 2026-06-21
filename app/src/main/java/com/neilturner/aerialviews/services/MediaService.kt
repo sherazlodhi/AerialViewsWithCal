@@ -150,9 +150,17 @@ class MediaService(
                 Timber.i("Media items after time filtering: ${filteredMedia.size}")
             }
 
+            // Sort by URI to ensure the base list order is deterministic before shuffling or linear playback.
+            // This is necessary because media is fetched in parallel from multiple sources.
+            filteredMedia = filteredMedia.sortedBy { it.uri.toString() }
+
             if (GeneralPrefs.shuffleVideos) {
-                filteredMedia = filteredMedia.shuffled()
-                Timber.i("Shuffling media items")
+                if (GeneralPrefs.playlistShuffleSeed == 0L) {
+                    GeneralPrefs.playlistShuffleSeed = System.currentTimeMillis()
+                }
+                val seed = GeneralPrefs.playlistShuffleSeed
+                filteredMedia = filteredMedia.shuffled(kotlin.random.Random(seed))
+                Timber.i("Shuffling ${filteredMedia.size} items with persistent seed: $seed")
             }
 
             if (GeneralPrefs.calendarAsSlide && GeneralPrefs.calendarEnabled) {

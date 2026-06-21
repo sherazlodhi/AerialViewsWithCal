@@ -10,6 +10,7 @@ import com.neilturner.aerialviews.ui.overlays.ProgressState
 import com.neilturner.aerialviews.services.CalendarEvent
 import com.neilturner.aerialviews.services.NewsItem
 import com.neilturner.aerialviews.services.StockItem
+import com.neilturner.aerialviews.services.HomeStatusItem
 
 data class OverlayUiState(
     val metadata: Map<OverlayType, MetadataOverlayState> = emptyMap(),
@@ -61,6 +62,7 @@ data class CalendarOverlayState(
 data class NewsOverlayState(
     val news: List<NewsItem> = emptyList(),
     val stocks: List<StockItem> = emptyList(),
+    val homeStatus: List<HomeStatusItem> = emptyList(),
 )
 
 fun MessageEvent.toState(): MessageOverlayState =

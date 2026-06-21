@@ -166,6 +166,12 @@ object GeneralPrefs : KotprefModel() {
     var newsIncludePakistan by booleanPref(true, "news_include_pakistan")
     var newsIncludeUAE by booleanPref(true, "news_include_uae")
     var newsIncludeStocks by booleanPref(true, "news_include_stocks")
+    var newsIncludeHome by booleanPref(true, "news_include_home")
+    var newsNtfyUrl by stringPref("https://ntfy.sherazlodhi.com", "news_ntfy_url")
+    var newsNtfyTopic by stringPref("home,IBKR_Alerts,Newlands_School", "news_ntfy_topic")
+    var newsIncludeHomeAssistant by booleanPref(false, "news_include_home_assistant")
+    var homeAssistantUrl by stringPref("http://homeassistant.local:8123", "home_assistant_url")
+    var homeAssistantToken by stringPref("", "home_assistant_token")
 
     // Other
     var alternateTextPosition by booleanPref(true, "alt_text_position")
@@ -229,6 +235,10 @@ object GeneralPrefs : KotprefModel() {
     val playlistTimeOfDayNightIncludes by stringSetPref("playlist_time_of_day_night_includes") {
         setOf("SUNSET")
     }
+
+    // Playlist Persistence
+    var playlistPosition by intPref(-1, "playlist_position")
+    var playlistShuffleSeed by longPref(0L, "playlist_shuffle_seed")
 
     // Playlist - Videos
     var muteVideos by booleanPref(true, "mute_videos")

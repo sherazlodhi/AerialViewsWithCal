@@ -50,6 +50,60 @@
             app:title="@string/news_include_stocks_title"
             app:defaultValue="true" />
 
+        <SwitchPreferenceCompat
+            app:key="news_include_home"
+            app:title="@string/news_include_home_title"
+            app:defaultValue="true" />
+
+        <EditTextPreference
+            app:key="news_ntfy_url"
+            app:title="@string/news_ntfy_url_title"
+            app:summary="@string/news_ntfy_url_summary"
+            app:useSimpleSummaryProvider="true"
+            app:defaultValue="https://ntfy.sherazlodhi.com"
+            app:dependency="news_include_home" />
+
+        <EditTextPreference
+            app:key="news_ntfy_topic"
+            app:title="@string/news_ntfy_topic_title"
+            app:summary="@string/news_ntfy_topic_summary"
+            app:useSimpleSummaryProvider="true"
+            app:defaultValue="home,IBKR_Alerts,Newlands_School"
+            app:dependency="news_include_home" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="news_home_assistant_category"
+        app:title="@string/news_home_assistant_category_title">
+
+        <SwitchPreferenceCompat
+            app:key="news_include_home_assistant"
+            app:title="@string/news_include_home_assistant_title"
+            app:defaultValue="false" />
+
+        <EditTextPreference
+            app:key="home_assistant_url"
+            app:title="@string/home_assistant_url_title"
+            app:summary="@string/home_assistant_url_summary"
+            app:useSimpleSummaryProvider="true"
+            app:defaultValue="http://homeassistant.local:8123"
+            app:dependency="news_include_home_assistant" />
+
+        <EditTextPreference
+            app:key="home_assistant_token"
+            app:title="@string/home_assistant_token_title"
+            app:summary="@string/home_assistant_token_summary"
+            app:useSimpleSummaryProvider="true"
+            app:defaultValue=""
+            app:dependency="news_include_home_assistant" />
+
+        <Preference
+            app:key="home_assistant_test_connection"
+            app:title="@string/home_assistant_test_connection_title"
+            app:summary="@string/home_assistant_test_connection_summary"
+            app:dependency="news_include_home_assistant" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

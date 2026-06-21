@@ -463,6 +463,20 @@
     <string name="news_include_pakistan_title">Include Pakistan News</string>
     <string name="news_include_uae_title">Include UAE News</string>
     <string name="news_include_stocks_title">Include Stock Highlights</string>
+    <string name="news_include_home_title">Include Home (ntfy)</string>
+    <string name="news_ntfy_url_title">Ntfy Server URL</string>
+    <string name="news_ntfy_url_summary">The URL of your self-hosted ntfy server</string>
+    <string name="news_ntfy_topic_title">Ntfy Topics</string>
+    <string name="news_ntfy_topic_summary">Comma-separated list of topics to fetch notifications from</string>
+    <string name="news_home_assistant_category_title">Home Assistant Settings</string>
+    <string name="news_include_home_assistant_title">Include Home Assistant status</string>
+    <string name="home_assistant_url_title">Home Assistant Server URL</string>
+    <string name="home_assistant_url_summary">The URL of your Home Assistant instance (e.g., http://192.168.x.x:8123)</string>
+    <string name="home_assistant_token_title">Home Assistant Access Token</string>
+    <string name="home_assistant_token_summary">Paste your Long-Lived Access Token here</string>
+    <string name="home_assistant_test_connection_title">Test Connection</string>
+    <string name="home_assistant_test_connection_summary">Test connectivity to your Home Assistant server with current settings</string>
+    <string name="home_assistant_test_results_title">Home Assistant Connection Test</string>
 
     <!-- Main / Settings / Overlays / Rows -->
     <string name="appearance_slot1_title">Lower Slot</string>

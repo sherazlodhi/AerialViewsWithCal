@@ -14,7 +14,14 @@ data class StockItem(
     val isPositive: Boolean,
 )
 
+data class HomeStatusItem(
+    val title: String,
+    val value: String,
+    val isAlert: Boolean = false,
+)
+
 data class InfoDataEvent(
     val news: List<NewsItem>,
     val stocks: List<StockItem>,
+    val homeStatus: List<HomeStatusItem> = emptyList(),
 )
