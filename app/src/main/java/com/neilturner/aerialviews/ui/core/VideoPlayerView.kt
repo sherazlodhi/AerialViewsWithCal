@@ -213,11 +213,15 @@ class VideoPlayerView
 
         override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
             super.onVideoSizeChanged(videoSize)
-            Timber.i("Video size detected: ${videoSize.width}x${videoSize.height}")
+            Timber.i("Video size detected: ${videoSize.width}x${videoSize.height}, rotation: ${videoSize.unappliedRotationDegrees}")
             
-            // If the video is vertical (height > width), we must use FIT to avoid "squishing" on TV
-            if (videoSize.height > videoSize.width) {
-                Timber.i("Vertical video detected, forcing RESIZE_MODE_FIT")
+            val isRotated = videoSize.unappliedRotationDegrees == 90 || videoSize.unappliedRotationDegrees == 270
+            val presentationWidth = if (isRotated) videoSize.height else videoSize.width
+            val presentationHeight = if (isRotated) videoSize.width else videoSize.height
+
+            // If the presentation size is vertical (height > width), force FIT to avoid squishing
+            if (presentationHeight > presentationWidth) {
+                Timber.i("Vertical video detected (presentation: ${presentationWidth}x${presentationHeight}), forcing RESIZE_MODE_FIT")
                 resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             } else {
                 // Otherwise restore user setting
