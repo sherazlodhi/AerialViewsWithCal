@@ -833,8 +833,21 @@ class ScreenController(
     private fun applyVideoRotation(degrees: Int) {
         val player = activeVideoPlayer
         player.rotation = degrees.toFloat()
-        player.scaleX = 1f
-        player.scaleY = 1f
+        if (degrees == 90 || degrees == 270) {
+            player.post {
+                val w = player.width.toFloat()
+                val h = player.height.toFloat()
+                if (w > 0 && h > 0) {
+                    // Scale rotated view by h/w so the 1920px rotated height fits 1080px TV height
+                    val scale = h / w
+                    player.scaleX = scale
+                    player.scaleY = scale
+                }
+            }
+        } else {
+            player.scaleX = 1f
+            player.scaleY = 1f
+        }
     }
 
     private fun pauseMedia() {
@@ -906,7 +919,13 @@ class ScreenController(
     override fun onVideoSizeDetected(width: Int, height: Int, unappliedRotationDegrees: Int) {
         val media = currentMedia ?: return
         val savedRotation = VideoRotationStore.getRotation(context, media.uri)
-        val rotationToApply = if (savedRotation != -1) savedRotation else 0
+        val rotationToApply = if (savedRotation != -1) {
+            savedRotation
+        } else if (unappliedRotationDegrees == 90 || unappliedRotationDegrees == 270) {
+            unappliedRotationDegrees
+        } else {
+            0
+        }
         applyVideoRotation(rotationToApply)
     }
 
