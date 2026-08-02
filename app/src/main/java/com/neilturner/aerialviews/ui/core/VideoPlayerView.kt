@@ -233,6 +233,7 @@ class VideoPlayerView
                 resizeMode = VideoPlayerHelper.getResizeMode(GeneralPrefs.videoScale)
             }
             requestLayout()
+            listener?.onVideoSizeDetected(videoSize.width, videoSize.height, videoSize.unappliedRotationDegrees)
         }
 
         @OptIn(UnstableApi::class)
@@ -468,6 +469,8 @@ class VideoPlayerView
             fun onVideoPrepared()
 
             fun onVideoPlaybackSpeedChanged()
+
+            fun onVideoSizeDetected(width: Int, height: Int, unappliedRotationDegrees: Int)
         }
 
         companion object {

@@ -12,7 +12,7 @@ object VideoRotationStore {
 
     fun getRotation(context: Context, uri: Uri): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getInt(uri.toString(), 0)
+        return prefs.getInt(uri.toString(), -1)
     }
 
     fun saveRotation(context: Context, uri: Uri, degrees: Int) {

@@ -830,13 +830,12 @@ class ScreenController(
         val player = activeVideoPlayer
         player.rotation = degrees.toFloat()
         if (degrees == 90 || degrees == 270) {
-            // After a 90/270 rotation the video width and height are swapped visually.
-            // Scale uniformly by w/h so it fills the landscape screen.
             player.post {
                 val w = player.width.toFloat()
                 val h = player.height.toFloat()
                 if (w > 0 && h > 0) {
-                    val scale = w / h
+                    // For portrait orientation on landscape TV, scale by h/w so the view height fits the TV height
+                    val scale = h / w
                     player.scaleX = scale
                     player.scaleY = scale
                 }
@@ -912,6 +911,19 @@ class ScreenController(
     override fun onVideoAlmostFinished() = fadeOutCurrentItem()
 
     override fun onVideoPrepared() = fadeInNextItem()
+
+    override fun onVideoSizeDetected(width: Int, height: Int, unappliedRotationDegrees: Int) {
+        val media = currentMedia ?: return
+        val savedRotation = VideoRotationStore.getRotation(context, media.uri)
+        val rotationToApply = if (savedRotation != -1) {
+            savedRotation
+        } else if (unappliedRotationDegrees == 90 || unappliedRotationDegrees == 270) {
+            unappliedRotationDegrees
+        } else {
+            0
+        }
+        applyVideoRotation(rotationToApply)
+    }
 
     override fun onVideoError() = handleError()
 
