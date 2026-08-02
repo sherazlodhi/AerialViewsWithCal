@@ -804,19 +804,23 @@ class ScreenController(
 
     fun rotateVideo() {
         val media = currentMedia ?: return
-        // Only rotate videos (not images, calendar slides, etc.)
         if (media.type != AerialMediaType.VIDEO) return
 
-        // Cycle: 0 → 90 → 180 → 270 → 0
+        // Cycle: 0 -> 90 -> 180 -> 270 -> 0
         val current = VideoRotationStore.getRotation(context, media.uri)
-        val next = (current + 90) % 360
+        val currentDeg = if (current == -1) 0 else current
+        val next = (currentDeg + 90) % 360
 
-        VideoRotationStore.saveRotation(context, media.uri, next)
+        if (next == 0) {
+            VideoRotationStore.clearRotation(context, media.uri)
+        } else {
+            VideoRotationStore.saveRotation(context, media.uri, next)
+        }
         applyVideoRotation(next)
 
         mainScope.launch {
             val label = when (next) {
-                0 -> "Rotation: Normal"
+                0 -> "Rotation: Normal (0°)"
                 90 -> "Rotation: 90°"
                 180 -> "Rotation: 180°"
                 270 -> "Rotation: 270°"
@@ -829,21 +833,8 @@ class ScreenController(
     private fun applyVideoRotation(degrees: Int) {
         val player = activeVideoPlayer
         player.rotation = degrees.toFloat()
-        if (degrees == 90 || degrees == 270) {
-            player.post {
-                val w = player.width.toFloat()
-                val h = player.height.toFloat()
-                if (w > 0 && h > 0) {
-                    // For portrait orientation on landscape TV, scale by h/w so the view height fits the TV height
-                    val scale = h / w
-                    player.scaleX = scale
-                    player.scaleY = scale
-                }
-            }
-        } else {
-            player.scaleX = 1f
-            player.scaleY = 1f
-        }
+        player.scaleX = 1f
+        player.scaleY = 1f
     }
 
     private fun pauseMedia() {
@@ -915,13 +906,7 @@ class ScreenController(
     override fun onVideoSizeDetected(width: Int, height: Int, unappliedRotationDegrees: Int) {
         val media = currentMedia ?: return
         val savedRotation = VideoRotationStore.getRotation(context, media.uri)
-        val rotationToApply = if (savedRotation != -1) {
-            savedRotation
-        } else if (unappliedRotationDegrees == 90 || unappliedRotationDegrees == 270) {
-            unappliedRotationDegrees
-        } else {
-            0
-        }
+        val rotationToApply = if (savedRotation != -1) savedRotation else 0
         applyVideoRotation(rotationToApply)
     }
 
