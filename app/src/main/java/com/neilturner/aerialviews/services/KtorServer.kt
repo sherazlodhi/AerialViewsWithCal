@@ -71,7 +71,7 @@ class KtorServer(
 
             try {
                 server =
-                    embeddedServer(CIO, port) {
+                    embeddedServer(CIO, port = port, host = "0.0.0.0") {
                         configurePlugins()
                         configureRouting()
                     }.start(wait = false)
@@ -222,3 +222,4 @@ data class MessageEvent(
     val append: Boolean = false,
     val isTicker: Boolean = false,
 )
+data class ScreensaverStateEvent(val active: Boolean)

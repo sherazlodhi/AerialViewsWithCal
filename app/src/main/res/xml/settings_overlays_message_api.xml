@@ -15,6 +15,13 @@
             app:defaultValue="8081"
             app:useSimpleSummaryProvider="true"
             app:dependency="message_api_enabled" />
+
+        <SwitchPreference
+            app:key="message_api_always_on_overlay"
+            app:title="@string/appearance_message_api_always_on_title"
+            app:summary="@string/appearance_message_api_always_on_summary"
+            app:defaultValue="false"
+            app:dependency="message_api_enabled" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/category_connection_information">

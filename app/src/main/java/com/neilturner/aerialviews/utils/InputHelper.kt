@@ -116,6 +116,8 @@ object InputHelper {
             ButtonType.TOGGLE_MUTE -> controller?.toggleMute()
             ButtonType.TOGGLE_PAUSE -> controller?.togglePause()
             ButtonType.TOGGLE_LOOPING -> controller?.toggleLooping()
+            ButtonType.TOGGLE_DEBUG_INFO -> controller?.toggleDebugInfo()
+            ButtonType.ROTATE_VIDEO -> controller?.rotateVideo()
             ButtonType.EXIT_TO_SETTINGS -> exit(false)
             else -> exit(true)
         }
@@ -155,6 +157,14 @@ object InputHelper {
 
             KeyEvent.KEYCODE_BACK -> {
                 action = ButtonType.EXIT
+            }
+
+            KeyEvent.KEYCODE_D -> {
+                action = ButtonType.TOGGLE_DEBUG_INFO
+            }
+
+            KeyEvent.KEYCODE_R -> {
+                action = ButtonType.ROTATE_VIDEO
             }
 
             KeyEvent.KEYCODE_DPAD_CENTER -> {
@@ -282,6 +292,8 @@ object InputHelper {
                 ButtonType.TOGGLE_MUTE -> controller?.toggleMute()
                 ButtonType.TOGGLE_PAUSE -> controller?.togglePause()
                 ButtonType.TOGGLE_LOOPING -> controller?.toggleLooping()
+                ButtonType.TOGGLE_DEBUG_INFO -> controller?.toggleDebugInfo()
+                ButtonType.ROTATE_VIDEO -> controller?.rotateVideo()
                 ButtonType.EXIT_TO_SETTINGS -> exit(false)
                 else -> exit(true)
             }

@@ -27,6 +27,7 @@ import com.neilturner.aerialviews.utils.RefreshRateHelper
 import com.neilturner.aerialviews.utils.ToastHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import me.kosert.flowbus.GlobalBus
 import timber.log.Timber
@@ -76,9 +77,9 @@ class VideoPlayerView
             player?.addListener(this)
 
             if (GeneralPrefs.loopUntilSkipped || GeneralPrefs.loopShortVideos) {
-                player?.repeatMode = Player.REPEAT_MODE_ALL // Used for looping short videos
+                player?.repeatMode = Player.REPEAT_MODE_ALL
             } else {
-                player?.repeatMode = Player.REPEAT_MODE_OFF // No looping
+                player?.repeatMode = Player.REPEAT_MODE_OFF
             }
 
             controllerAutoShow = false
@@ -88,13 +89,16 @@ class VideoPlayerView
 
         fun release() {
             pause()
+            player?.removeListener(this)
             player?.release()
+            player = null
             cancelVolumeFade()
 
             removeCallbacks(almostFinishedRunnable)
             removeCallbacks(canChangePlaybackSpeedRunnable)
             removeCallbacks(onErrorRunnable)
 
+            mainScope.cancel()
             listener = null
         }
 
@@ -125,7 +129,7 @@ class VideoPlayerView
 
             val isImmich = media.source == AerialMediaSource.IMMICH
             val shouldMute = if (isImmich) !GeneralPrefs.immichVideoSound else GeneralPrefs.muteVideos
-            
+
             if (shouldMute) {
                 exoPlayer.volume = 0f
             } else {
@@ -206,6 +210,7 @@ class VideoPlayerView
         fun stop() {
             removeCallbacks(almostFinishedRunnable)
             exoPlayer.stop()
+            exoPlayer.clearMediaItems()
         }
 
         val currentPosition

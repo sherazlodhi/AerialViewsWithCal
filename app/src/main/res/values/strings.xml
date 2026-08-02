@@ -14,6 +14,12 @@
     <string name="common_default">(default)</string>
 
     <!-- Common Buttons -->
+    <string name="btn_toggle_mute">Toggle mute/unmute</string>
+    <string name="btn_toggle_pause">Pause/unpause video</string>
+    <string name="btn_toggle_looping">Toggle looping for current video</string>
+    <string name="btn_toggle_debug_info">Toggle debug overlay</string>
+
+    <string name="settings_about_header">About / Legal</string>
     <string name="button_ok">OK</string>
     <string name="button_cancel">Cancel</string>
     <string name="button_import">Import</string>
@@ -591,6 +597,12 @@
     <string name="appearance_message_api_enabled_title">Enable API</string>
     <string name="appearance_message_api_enabled_summary">Allow remote setting of custom messages via a HTTP API</string>
     <string name="appearance_message_api_port_title">Port number (default: 8081)</string>
+    <string name="appearance_message_api_always_on_title">Always-On Overlay</string>
+    <string name="appearance_message_api_always_on_summary">Show messages on top of any screen, even when screensaver is not running</string>
+    <string name="message_overlay_service_notification_title">Message Overlay Active</string>
+    <string name="message_overlay_service_notification_text">Listening for messages on port %1$s</string>
+    <string name="message_overlay_channel_id">message_overlay_channel</string>
+    <string name="message_overlay_channel_name">Message Overlay</string>
 
     <!-- Main / Settings / Appearance -->
     <string name="appearance_typography_title">Typography</string>

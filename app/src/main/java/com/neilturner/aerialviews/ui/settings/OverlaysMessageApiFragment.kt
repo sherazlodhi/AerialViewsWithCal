@@ -3,8 +3,10 @@ package com.neilturner.aerialviews.ui.settings
 import android.os.Bundle
 import androidx.preference.EditTextPreference
 import androidx.preference.Preference
+import androidx.preference.SwitchPreference
 import com.neilturner.aerialviews.R
 import com.neilturner.aerialviews.models.prefs.GeneralPrefs
+import com.neilturner.aerialviews.services.MessageOverlayService
 import com.neilturner.aerialviews.utils.DeviceIPHelper
 import com.neilturner.aerialviews.utils.FirebaseHelper
 import com.neilturner.aerialviews.utils.MenuStateFragment
@@ -23,14 +25,33 @@ class OverlaysMessageApiFragment : MenuStateFragment() {
 
         updateIPAddressDisplay()
         limitTextInput()
+        setupAlwaysOnOverlayToggle()
+
+        // If already enabled, make sure the service is running
+        if (GeneralPrefs.messageApiEnabled && GeneralPrefs.messageApiAlwaysOnOverlay) {
+            MessageOverlayService.startIfEnabled(requireContext())
+        }
     }
 
     override fun onPreferenceTreeClick(preference: Preference): Boolean {
         if (preference.key.isNullOrEmpty()) {
             return super.onPreferenceTreeClick(preference)
         }
-
         return super.onPreferenceTreeClick(preference)
+    }
+
+    private fun setupAlwaysOnOverlayToggle() {
+        val alwaysOnPref = findPreference<SwitchPreference>("message_api_always_on_overlay") ?: return
+
+        alwaysOnPref.setOnPreferenceChangeListener { _, newValue ->
+            val enabled = newValue as Boolean
+            if (enabled) {
+                MessageOverlayService.startIfEnabled(requireContext())
+            } else {
+                MessageOverlayService.stop(requireContext())
+            }
+            true
+        }
     }
 
     private fun updateIPAddressDisplay() {

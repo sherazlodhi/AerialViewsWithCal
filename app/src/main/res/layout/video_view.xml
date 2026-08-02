@@ -7,9 +7,10 @@
     tools:ignore="MergeRootFrame">
 
     <com.neilturner.aerialviews.ui.core.VideoPlayerView
-        android:id="@+id/video_player"
+        android:id="@+id/video_player_surface"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        app:surface_type="surface_view"
         app:use_controller="false" />
 
 </FrameLayout>

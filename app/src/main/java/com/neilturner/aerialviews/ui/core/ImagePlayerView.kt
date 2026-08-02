@@ -103,6 +103,11 @@ class ImagePlayerView : FrameLayout {
     }
 
     fun release() {
+        foregroundImageView.setImageDrawable(null)
+        secondImageView.setImageDrawable(null)
+        backgroundImageView.setImageDrawable(null)
+        blurHelper.cancel()
+
         ioJob.cancel()
         mainJob.cancel()
         removeCallbacks(finishedRunnable)

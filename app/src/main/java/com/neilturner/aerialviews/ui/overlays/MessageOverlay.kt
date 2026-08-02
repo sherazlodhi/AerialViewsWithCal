@@ -76,6 +76,7 @@ class MessageOverlay : AppCompatTextView {
     }
 
     fun render(state: MessageOverlayState) {
+        timber.log.Timber.i("MessageOverlay: render called with text=${state.text}")
         if (currentMessage != state) {
             currentMessage = state
             requestUpdate()

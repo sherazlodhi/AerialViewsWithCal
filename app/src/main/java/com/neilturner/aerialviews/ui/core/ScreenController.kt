@@ -11,6 +11,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.isVisible
+import com.neilturner.aerialviews.models.enums.AerialMediaSource
 import com.neilturner.aerialviews.R
 import com.neilturner.aerialviews.databinding.AerialActivityBinding
 import com.neilturner.aerialviews.databinding.ImageViewBinding
@@ -54,6 +55,7 @@ import com.neilturner.aerialviews.utils.OverlayHelper
 import com.neilturner.aerialviews.utils.PermissionHelper
 import com.neilturner.aerialviews.utils.RefreshRateHelper
 import com.neilturner.aerialviews.utils.ToastHelper
+import com.neilturner.aerialviews.utils.VideoRotationStore
 import com.neilturner.aerialviews.utils.WindowHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -115,12 +117,13 @@ class ScreenController(
     private val loadingView: View
     private val overlayView: View
     private var loadingText: TextView
-    private var videoPlayer: VideoPlayerView
+    private lateinit var activeVideoPlayer: VideoPlayerView
     private var imagePlayer: ImagePlayerView
     private val brightnessView: View
     private val gradientTopView: View
     private val gradientBottomView: View
     private val progressBarView: ProgressBar
+    private val debugTextView: TextView
     val view: View
 
     private val topLeftIds: List<Int>
@@ -132,6 +135,8 @@ class ScreenController(
         private set
 
     init {
+        isScreensaverActive = true
+        me.kosert.flowbus.GlobalBus.post(com.neilturner.aerialviews.services.ScreensaverStateEvent(true))
         val inflater = LayoutInflater.from(context)
         val binding = AerialActivityBinding.inflate(inflater)
 
@@ -150,29 +155,11 @@ class ScreenController(
         gradientTopView = overlayViewBinding.gradientTop
         gradientBottomView = overlayViewBinding.gradientBottom
 
-        val initialVideoRoot = binding.videoView.root
-        val videoParent = initialVideoRoot.parent as? ViewGroup
-        val videoLayoutRes =
-            if (GeneralPrefs.useTextureViewForVideo) {
-                R.layout.video_view_texture
-            } else {
-                R.layout.video_view
-            }
-
-        videoViewBinding =
-            if (videoParent != null) {
-                val index = videoParent.indexOfChild(initialVideoRoot)
-                videoParent.removeView(initialVideoRoot)
-                val replacementVideoRoot = inflater.inflate(videoLayoutRes, videoParent, false)
-                videoParent.addView(replacementVideoRoot, index)
-                VideoViewBinding.bind(replacementVideoRoot)
-            } else {
-                binding.videoView
-            }
+        videoViewBinding = binding.videoView
 
         videoViewBinding.root.setBackgroundColor(backgroundVideos)
-        videoPlayer = videoViewBinding.videoPlayer
-        videoPlayer.setOnPlayerListener(this)
+        activeVideoPlayer = videoViewBinding.root.findViewById(R.id.video_player_surface)
+        activeVideoPlayer.setOnPlayerListener(this)
 
         imageViewBinding = binding.imageView
         imageViewBinding.root.setBackgroundColor(backgroundPhotos)
@@ -181,6 +168,7 @@ class ScreenController(
 
         brightnessView = binding.brightnessView
         progressBarView = binding.progressBar
+        debugTextView = binding.root.findViewById(R.id.debug_text_view)
 
         // Setup loading message or hide it
         if (GeneralPrefs.showLoadingText) {
@@ -253,14 +241,18 @@ class ScreenController(
                 nowPlayingService = NowPlayingService(context)
             }
 
-            if (overlayHelper.findOverlay<MessageOverlay>().isNotEmpty() && GeneralPrefs.messageApiEnabled) {
-                ktorServer =
-                    KtorServer(context) { messageEvent ->
-                        GlobalBus.post(messageEvent)
-                    }.apply {
-                        start()
-                    }
-                
+            if (GeneralPrefs.messageApiEnabled) {
+                // Only start our own server if the always-on overlay service isn't already
+                // running one (it would cause a port bind conflict)
+                if (!GeneralPrefs.messageApiAlwaysOnOverlay) {
+                    ktorServer =
+                        KtorServer(context) { messageEvent ->
+                            GlobalBus.post(messageEvent)
+                        }.apply {
+                            start()
+                        }
+                }
+
                 // Initialize TTS for #Announce# command
                 ttsService = TtsService(context)
                 receiver.subscribe<SpeechEvent> { event ->
@@ -344,6 +336,10 @@ class ScreenController(
 
         updateMetadataOverlayData(media)
 
+        if (debugTextView.visibility == View.VISIBLE) {
+            updateDebugInfo(media)
+        }
+
         // Set overlay positions
         overlayHelper.assignOverlaysAndIds(
             overlayViewBinding.flowBottomLeft,
@@ -367,7 +363,10 @@ class ScreenController(
 
         // Videos
         if (media.type == AerialMediaType.VIDEO) {
-            videoPlayer.setVideo(media)
+            activeVideoPlayer.setVideo(media)
+            // Apply any saved rotation for this video
+            val savedRotation = VideoRotationStore.getRotation(context, media.uri)
+            applyVideoRotation(savedRotation)
             videoViewBinding.root.visibility = View.VISIBLE
             imageViewBinding.root.visibility = View.INVISIBLE
         }
@@ -421,7 +420,7 @@ class ScreenController(
         }
 
         if (media.type == AerialMediaType.VIDEO) {
-            videoPlayer.start()
+            activeVideoPlayer.start()
         }
     }
 
@@ -507,7 +506,7 @@ class ScreenController(
         }
 
         if (currentMedia?.type == AerialMediaType.VIDEO) {
-            videoPlayer.fadeOutAudio(mediaFadeOut)
+            activeVideoPlayer.fadeOutAudio(mediaFadeOut)
         }
 
         // Fade in LoadView (ie. black screen)
@@ -522,7 +521,7 @@ class ScreenController(
             }.withEndAction {
                 // Hide content views after faded out
                 videoViewBinding.root.visibility = View.INVISIBLE
-                videoViewBinding.videoPlayer.stop()
+                activeVideoPlayer.stop()
 
                 imageViewBinding.root.visibility = View.INVISIBLE
                 imageViewBinding.imagePlayer.stop()
@@ -650,10 +649,13 @@ class ScreenController(
     }
 
     fun stop() {
+        isScreensaverActive = false
+        me.kosert.flowbus.GlobalBus.post(com.neilturner.aerialviews.services.ScreensaverStateEvent(false))
         RefreshRateHelper.restoreOriginalMode(context)
         receiver.unsubscribe()
         overlayEventBridge.stop()
-        videoPlayer.release()
+        view.setOnTouchListener(null)
+        activeVideoPlayer.release()
         imagePlayer.release()
         ktorServer?.stop()
         ttsService?.stop()
@@ -702,28 +704,28 @@ class ScreenController(
         if (blackOutMode) {
             return
         }
-        videoPlayer.increaseSpeed()
+        activeVideoPlayer.increaseSpeed()
     }
 
     fun decreaseSpeed() {
         if (blackOutMode) {
             return
         }
-        videoPlayer.decreaseSpeed()
+        activeVideoPlayer.decreaseSpeed()
     }
 
     fun seekForward() {
         if (blackOutMode) {
             return
         }
-        videoPlayer.seekForward()
+        activeVideoPlayer.seekForward()
     }
 
     fun seekBackward() {
         if (blackOutMode) {
             return
         }
-        videoPlayer.seekBackward()
+        activeVideoPlayer.seekBackward()
     }
 
     fun togglePause() {
@@ -736,8 +738,27 @@ class ScreenController(
 
     fun toggleLooping() {
         if (videoViewBinding.root.isVisible) {
-            videoPlayer.toggleLooping()
+            activeVideoPlayer.toggleLooping()
         }
+    }
+
+    fun toggleDebugInfo() {
+        if (debugTextView.visibility == View.VISIBLE) {
+            debugTextView.visibility = View.GONE
+        } else {
+            debugTextView.visibility = View.VISIBLE
+            currentMedia?.let { updateDebugInfo(it) }
+        }
+    }
+
+    private fun updateDebugInfo(media: AerialMedia) {
+        val info = buildString {
+            append("URI: ").append(media.uri).append("\n")
+            append("Source: ").append(media.source.name).append("\n")
+            append("Type: ").append(media.type.name).append("\n")
+            append("Exif: ").append(media.metadata.exif).append("\n")
+        }
+        debugTextView.text = info
     }
 
     fun increaseBrightness() = changeBrightness(true)
@@ -778,7 +799,52 @@ class ScreenController(
     }
 
     fun toggleMute() {
-        videoPlayer.toggleMute()
+        activeVideoPlayer.toggleMute()
+    }
+
+    fun rotateVideo() {
+        val media = currentMedia ?: return
+        // Only rotate videos (not images, calendar slides, etc.)
+        if (media.type != AerialMediaType.VIDEO) return
+
+        // Cycle: 0 → 90 → 180 → 270 → 0
+        val current = VideoRotationStore.getRotation(context, media.uri)
+        val next = (current + 90) % 360
+
+        VideoRotationStore.saveRotation(context, media.uri, next)
+        applyVideoRotation(next)
+
+        mainScope.launch {
+            val label = when (next) {
+                0 -> "Rotation: Normal"
+                90 -> "Rotation: 90°"
+                180 -> "Rotation: 180°"
+                270 -> "Rotation: 270°"
+                else -> "Rotation: ${next}°"
+            }
+            ToastHelper.show(context, label)
+        }
+    }
+
+    private fun applyVideoRotation(degrees: Int) {
+        val player = activeVideoPlayer
+        player.rotation = degrees.toFloat()
+        if (degrees == 90 || degrees == 270) {
+            // After a 90/270 rotation the video width and height are swapped visually.
+            // Scale uniformly by w/h so it fills the landscape screen.
+            player.post {
+                val w = player.width.toFloat()
+                val h = player.height.toFloat()
+                if (w > 0 && h > 0) {
+                    val scale = w / h
+                    player.scaleX = scale
+                    player.scaleY = scale
+                }
+            }
+        } else {
+            player.scaleX = 1f
+            player.scaleY = 1f
+        }
     }
 
     private fun pauseMedia() {
@@ -789,7 +855,7 @@ class ScreenController(
 
         // Pause video if currently showing
         if (videoViewBinding.root.isVisible) {
-            videoPlayer.pause()
+            activeVideoPlayer.pause()
         }
 
         // Pause image timer if currently showing
@@ -811,7 +877,7 @@ class ScreenController(
 
         // Resume video if currently showing
         if (videoViewBinding.root.isVisible) {
-            videoPlayer.resume()
+            activeVideoPlayer.resume()
         }
 
         // Resume image timer if currently showing
@@ -987,7 +1053,7 @@ class ScreenController(
         overlayHelper.findOverlay<MetadataOverlay>().forEach { overlay ->
             val locationState = state.metadata[overlay.type]
             if (locationState != null) {
-                overlay.render(locationState, videoPlayer)
+                overlay.render(locationState, activeVideoPlayer)
             }
         }
 
@@ -1003,7 +1069,9 @@ class ScreenController(
             it.render(state.forecast)
         }
 
-        overlayHelper.findOverlay<MessageOverlay>().forEach { overlay ->
+        val overlays = overlayHelper.findOverlay<MessageOverlay>()
+        timber.log.Timber.i("ScreenController: found ${overlays.size} message overlays")
+        overlays.forEach { overlay ->
             overlay.render(state.message[overlay.type] ?: MessageOverlayState())
         }
         
@@ -1023,6 +1091,7 @@ class ScreenController(
     }
 
     companion object {
+        var isScreensaverActive = false
         const val LOADING_FADE_OUT: Long = 300 // Fade out loading text
         const val LOADING_DELAY: Long = 400 // Delay before fading out loading view
         const val ERROR_DELAY: Long = 2000 // Delay before loading next item, after error

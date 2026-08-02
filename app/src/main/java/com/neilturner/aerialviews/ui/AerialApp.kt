@@ -10,6 +10,7 @@ import com.neilturner.aerialviews.models.prefs.AppleVideoPrefs
 import com.neilturner.aerialviews.models.prefs.Comm1VideoPrefs
 import com.neilturner.aerialviews.models.prefs.Comm2VideoPrefs
 import com.neilturner.aerialviews.models.prefs.GeneralPrefs
+import com.neilturner.aerialviews.services.MessageOverlayService
 import com.neilturner.aerialviews.utils.DeviceHelper
 import timber.log.Timber
 
@@ -17,6 +18,9 @@ class AerialApp : Application() {
     override fun onCreate() {
         super.onCreate()
         configureLogging()
+
+        // Start the always-on overlay service if enabled (runs even without screensaver)
+        MessageOverlayService.startIfEnabled(this)
 
         if (BuildConfig.DEBUG || BuildConfig.FLAVOR.contains("beta", false)) {
             Timber.plant(Timber.DebugTree())

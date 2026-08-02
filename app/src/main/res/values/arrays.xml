@@ -898,9 +898,10 @@
     <string name="btn_exit_settings">Exit to settings screen</string>
     <string name="btn_show_overlays">Show overlays, if hidden</string>
     <string name="btn_blackout">Blackout screen, fade out media and overlays</string>
-    <string name="btn_toggle_mute">Toggle mute/unmute audio</string>
-    <string name="btn_toggle_pause">Pause/unpause video or photo timer</string>
-    <string name="btn_toggle_looping">Toggle looping for current video</string>
+    <string name="btn_toggle_mute_audio">Toggle mute/unmute audio</string>
+    <string name="btn_toggle_pause_timer">Pause/unpause video or photo timer</string>
+    <string name="btn_toggle_looping_video">Toggle looping for current video</string>
+    <string name="btn_rotate_video">Rotate video 90° and remember it</string>
     <string-array name="button_action_entries" translatable="false">
         <item>@string/btn_ignore</item>
         <item>@string/btn_skip_next</item>
@@ -917,9 +918,11 @@
         <item>@string/btn_exit_settings</item>
         <item>@string/btn_show_overlays</item>
         <item>@string/btn_blackout</item>
-        <item>@string/btn_toggle_mute</item>
-        <item>@string/btn_toggle_pause</item>
-        <item>@string/btn_toggle_looping</item>
+        <item>@string/btn_toggle_mute_audio</item>
+        <item>@string/btn_toggle_pause_timer</item>
+        <item>@string/btn_toggle_looping_video</item>
+        <item>@string/btn_toggle_debug_info</item>
+        <item>@string/btn_rotate_video</item>
     </string-array>
     <string-array name="button_action_values" translatable="false">
         <item>IGNORE</item>
@@ -940,6 +943,8 @@
         <item>TOGGLE_MUTE</item>
         <item>TOGGLE_PAUSE</item>
         <item>TOGGLE_LOOPING</item>
+        <item>TOGGLE_DEBUG_INFO</item>
+        <item>ROTATE_VIDEO</item>
 
     </string-array>
     <string name="button_action_default" translatable="false">IGNORE</string>

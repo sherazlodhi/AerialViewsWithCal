@@ -27,6 +27,7 @@ class OverlayEventBridge(
             store.setForecast(event)
         }
         receiver.subscribe<MessageEvent> { event ->
+            timber.log.Timber.i("OverlayEventBridge: Received MessageEvent: ${event.text}")
             store.setMessage(event.type, event.toState())
         }
         receiver.subscribe<CalendarDataEvent> { event ->
