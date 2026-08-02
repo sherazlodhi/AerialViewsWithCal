@@ -831,23 +831,9 @@ class ScreenController(
     }
 
     private fun applyVideoRotation(degrees: Int) {
-        val player = activeVideoPlayer
-        player.rotation = degrees.toFloat()
-        if (degrees == 90 || degrees == 270) {
-            player.post {
-                val w = player.width.toFloat()
-                val h = player.height.toFloat()
-                if (w > 0 && h > 0) {
-                    // Scale rotated view by h/w so the 1920px rotated height fits 1080px TV height
-                    val scale = h / w
-                    player.scaleX = scale
-                    player.scaleY = scale
-                }
-            }
-        } else {
-            player.scaleX = 1f
-            player.scaleY = 1f
-        }
+        // SurfaceView cannot rotate video pixels — rotation is purely informational here.
+        // Portrait videos are handled by RESIZE_MODE_FIT in VideoPlayerView.onVideoSizeChanged.
+        Timber.i("Video rotation preference: ${degrees}°")
     }
 
     private fun pauseMedia() {
